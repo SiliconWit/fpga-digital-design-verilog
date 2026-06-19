@@ -12,6 +12,7 @@ import TawkWidget from '../../../../components/TawkWidget.astro';
 import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
 import InArticleAd from '../../../../components/InArticleAd.astro';
 import Copyright from '../../../../components/Copyright.astro';
+import BionicText from '../../../../components/BionicText.astro';
 import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
@@ -19,6 +20,8 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
 <UniversalContentContributors 
   contributors={frontmatter.contributors}
 />
+
+
 
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
@@ -40,6 +43,9 @@ By the end of this lesson, you will be able to:
 
 ## What We Are Building
 
+<InArticleAd />
+
+
 <Card title="A self-checking testbench for the 4-bit adder" icon="star">
   You will wrap the adder from Lesson 1 in a testbench that applies many input combinations, compares each result against the expected sum, and prints a clear pass or fail summary.
 </Card>
@@ -47,6 +53,7 @@ By the end of this lesson, you will be able to:
 ## Anatomy of a Testbench
 
 <InArticleAd />
+
 
 {/* CONTRIBUTOR: explain the testbench module has no ports, instantiates the design under test (DUT),
    generates a clock, applies stimulus in an initial block, and finishes with $finish. */}
@@ -72,9 +79,15 @@ endmodule
 
 ## Generating Stimulus
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: show directed stimulus and a simple loop over input combinations. */}
 
 ## Self-Checking with Assertions
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: show comparing the DUT output against a reference computed in the testbench,
    and using $display / $error to report mismatches. Emphasise that a good testbench needs no human
@@ -82,10 +95,16 @@ endmodule
 
 ## Dumping and Reading Waveforms
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: cover $dumpfile / $dumpvars, running iverilog + vvp, opening the .vcd in GTKWave,
    and how to add signals and zoom. A labelled screenshot helps here. */}
 
 ## Application Questions and Solutions
+
+<InArticleAd />
+
 
 ### Question 1: Why did the sum look correct but the carry was wrong?
 
@@ -110,6 +129,7 @@ A learner reports that their adder testbench shows the correct `sum` but `cout` 
 
 <InArticleAd />
 
+
 | Concept | Key Takeaway |
 |---------|--------------|
 | Testbench | A port-less module that drives and checks the design under test |
@@ -122,6 +142,8 @@ In [Lesson 3: State Machines in Verilog](/education/fpga-digital-design-verilog/
 :::
 
 <FpgaDigitalDesignVerilogComments />
+
+
 
 <InArticleAd />
 <TawkWidget />

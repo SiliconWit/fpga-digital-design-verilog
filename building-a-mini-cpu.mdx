@@ -12,6 +12,7 @@ import TawkWidget from '../../../../components/TawkWidget.astro';
 import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
 import InArticleAd from '../../../../components/InArticleAd.astro';
 import Copyright from '../../../../components/Copyright.astro';
+import BionicText from '../../../../components/BionicText.astro';
 import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
@@ -19,6 +20,8 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
 <UniversalContentContributors 
   contributors={frontmatter.contributors}
 />
+
+
 
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
@@ -41,6 +44,9 @@ By the end of this lesson, you will be able to:
 
 ## What We Are Building
 
+<InArticleAd />
+
+
 <Card title="An 8-bit CPU running a small program" icon="star">
   You will design a tiny processor with a handful of instructions (load, store, add, jump, and a branch), load a short program into its memory, and watch it execute on the board, for example counting on the LEDs.
 </Card>
@@ -49,15 +55,22 @@ By the end of this lesson, you will be able to:
 
 <InArticleAd />
 
+
 {/* CONTRIBUTOR: define 6 to 8 instructions, their opcodes, and the instruction word format.
    Keep it small enough to fully implement and explain. Present the ISA as a table. */}
 
 ## The Datapath
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: register file, ALU (reuse concepts from earlier), program counter, and the memory
    interface. A block diagram is very valuable here. */}
 
 ## The Control FSM: Fetch, Decode, Execute
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: this is where the state-machine lesson pays off. Walk through the cycle and how the
    control signals steer the datapath. */}
@@ -75,6 +88,9 @@ endmodule
 
 ## Writing and Loading a Program
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: hand-assemble a short program, load it via $readmemh into memory, and run it. */}
 
 :::tip[Instrument it]
@@ -82,6 +98,9 @@ A CPU you built yourself is the perfect thing to make observable. Bring the prog
 :::
 
 ## Application Questions and Solutions
+
+<InArticleAd />
+
 
 ### Question 1: The program counter never advances
 
@@ -106,6 +125,7 @@ After loading a program, the CPU sits with the program counter stuck at zero. Wh
 
 <InArticleAd />
 
+
 | Concept | Key Takeaway |
 |---------|--------------|
 | Instruction set | A small, fixed set of operations encoded in the instruction word |
@@ -118,6 +138,8 @@ In [Lesson 8: FPGA plus MCU Co-Design](/education/fpga-digital-design-verilog/fp
 :::
 
 <FpgaDigitalDesignVerilogComments />
+
+
 
 <InArticleAd />
 <TawkWidget />

@@ -12,6 +12,7 @@ import TawkWidget from '../../../../components/TawkWidget.astro';
 import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
 import InArticleAd from '../../../../components/InArticleAd.astro';
 import Copyright from '../../../../components/Copyright.astro';
+import BionicText from '../../../../components/BionicText.astro';
 import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
@@ -19,6 +20,8 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
 <UniversalContentContributors 
   contributors={frontmatter.contributors}
 />
+
+
 
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
@@ -40,6 +43,9 @@ By the end of this lesson, you will be able to:
 
 ## What We Are Building
 
+<InArticleAd />
+
+
 <Card title="A UART transmitter and a PWM LED dimmer" icon="star">
   You will build a PWM generator that smoothly dims an LED, and a UART transmitter that sends characters to your computer, both running on the FPGA and verified first in simulation.
 </Card>
@@ -47,6 +53,7 @@ By the end of this lesson, you will be able to:
 ## Counters as the Foundation: PWM
 
 <InArticleAd />
+
 
 {/* CONTRIBUTOR: build PWM from a free-running counter and a compare value. Connect duty cycle to the
    compare register the reader sets on an STM32 or ESP32. */}
@@ -65,14 +72,23 @@ endmodule
 
 ## Serial Out: The UART Transmitter
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: framing (start bit, data bits, stop bit), baud-rate generation from the clock,
    and the transmit FSM. This is the centrepiece build of the lesson. */}
 
 ## Serial In: The UART Receiver
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: oversampling, start-bit detection, and sampling in the middle of each bit. */}
 
 ## SPI Master and Shift Registers
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: shift registers as the core of serial interfaces, then a simple SPI master
    (clock, MOSI, MISO, chip select). */}
@@ -82,6 +98,9 @@ A UART or SPI block is exactly where a logic analyser earns its place. Capture t
 :::
 
 ## Application Questions and Solutions
+
+<InArticleAd />
+
 
 ### Question 1: Garbled UART output
 
@@ -106,6 +125,7 @@ Characters sent from your FPGA UART arrive as garbage on the terminal, though th
 
 <InArticleAd />
 
+
 | Concept | Key Takeaway |
 |---------|--------------|
 | PWM | A counter plus a compare value sets the duty cycle |
@@ -119,6 +139,8 @@ In [Lesson 6: Memory, FIFOs, and Clock-Domain Crossing](/education/fpga-digital-
 :::
 
 <FpgaDigitalDesignVerilogComments />
+
+
 
 <InArticleAd />
 <TawkWidget />

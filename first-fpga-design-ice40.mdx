@@ -12,6 +12,7 @@ import TawkWidget from '../../../../components/TawkWidget.astro';
 import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
 import InArticleAd from '../../../../components/InArticleAd.astro';
 import Copyright from '../../../../components/Copyright.astro';
+import BionicText from '../../../../components/BionicText.astro';
 import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
@@ -19,6 +20,8 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
 <UniversalContentContributors 
   contributors={frontmatter.contributors}
 />
+
+
 
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
@@ -41,6 +44,9 @@ By the end of this lesson, you will be able to:
 
 ## What We Are Building
 
+<InArticleAd />
+
+
 <Card title="Blink and a debounced button counter on an iCE40 board" icon="star">
   You will flash a blinking LED to confirm the toolchain works, then build a counter driven by a debounced push button so you see input, sequential logic, and output all running on real hardware.
 </Card>
@@ -57,10 +63,14 @@ By the end of this lesson, you will be able to:
 
 <InArticleAd />
 
+
 {/* CONTRIBUTOR: explain LUTs, flip-flops, block RAM, DSP blocks, and the routing fabric.
    Contrast with an MCU: an FPGA is configurable hardware, not a processor running instructions. */}
 
 ## The Toolchain: From Verilog to Bitstream
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: synthesis (Yosys) -> place and route (nextpnr) -> bitstream packing -> flashing.
    Provide copy-paste commands and the install steps per OS. */}
@@ -75,9 +85,15 @@ iceprog top.bin
 
 ## Pin Constraints
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: explain the .pcf file mapping top-level ports to physical pins, with an example. */}
 
 ## Timing and Maximum Frequency
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: introduce the timing report, setup constraint, and Fmax. Keep it intuitive:
    logic between two flip-flops must settle within one clock period. */}
@@ -87,6 +103,9 @@ Once a design runs on the board, the fastest way to see what it is really doing 
 :::
 
 ## Application Questions and Solutions
+
+<InArticleAd />
+
 
 ### Question 1: Works in simulation, wrong on the board
 
@@ -111,6 +130,7 @@ A counter behaves perfectly in simulation but on the FPGA it counts erratically 
 
 <InArticleAd />
 
+
 | Concept | Key Takeaway |
 |---------|--------------|
 | FPGA fabric | Lookup tables, flip-flops, and routing configured by your design |
@@ -124,6 +144,8 @@ In [Lesson 5: Building MCU-Style Peripherals](/education/fpga-digital-design-ver
 :::
 
 <FpgaDigitalDesignVerilogComments />
+
+
 
 <InArticleAd />
 <TawkWidget />

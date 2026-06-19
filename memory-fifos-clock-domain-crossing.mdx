@@ -12,6 +12,7 @@ import TawkWidget from '../../../../components/TawkWidget.astro';
 import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
 import InArticleAd from '../../../../components/InArticleAd.astro';
 import Copyright from '../../../../components/Copyright.astro';
+import BionicText from '../../../../components/BionicText.astro';
 import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
@@ -19,6 +20,8 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
 <UniversalContentContributors 
   contributors={frontmatter.contributors}
 />
+
+
 
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
@@ -41,6 +44,9 @@ By the end of this lesson, you will be able to:
 
 ## What We Are Building
 
+<InArticleAd />
+
+
 <Card title="A dual-clock FIFO" icon="star">
   You will build a FIFO that accepts data on one clock and delivers it on another, the standard safe bridge between two clock domains, and test it with mismatched clocks in simulation.
 </Card>
@@ -49,19 +55,29 @@ By the end of this lesson, you will be able to:
 
 <InArticleAd />
 
+
 {/* CONTRIBUTOR: show the coding pattern the synthesiser recognises as block RAM, and contrast with
    accidentally building RAM out of flip-flops (wasteful). */}
 
 ## Building a Synchronous FIFO
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: read and write pointers, full and empty detection, and depth. Single-clock first. */}
 
 ## Metastability: Why One Flip-Flop Is Not Enough
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: explain what happens when a signal changes near a clock edge, and why a captured value
    can be neither 0 nor 1 for a moment. Keep it intuitive but correct. */}
 
 ## The Two-Flip-Flop Synchroniser
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: the standard fix for a single-bit signal crossing domains. Stress it works for one bit,
    not for buses. */}
@@ -83,6 +99,9 @@ endmodule
 
 ## Crossing a Bus: The Dual-Clock FIFO
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: explain why multi-bit values need a FIFO or Gray-coded pointers rather than per-bit
    synchronisers. Build the dual-clock FIFO here. */}
 
@@ -91,6 +110,9 @@ Clock-domain bugs are intermittent, so reproduce them on purpose before trusting
 :::
 
 ## Application Questions and Solutions
+
+<InArticleAd />
+
 
 ### Question 1: The bug that only appears in hardware
 
@@ -115,6 +137,7 @@ A data path passes a multi-bit counter value from a fast clock to a slow one usi
 
 <InArticleAd />
 
+
 | Concept | Key Takeaway |
 |---------|--------------|
 | Block RAM | Use the inference pattern, do not build large memory from flip-flops |
@@ -128,6 +151,8 @@ In [Lesson 7: Building a Mini CPU](/education/fpga-digital-design-verilog/buildi
 :::
 
 <FpgaDigitalDesignVerilogComments />
+
+
 
 <InArticleAd />
 <TawkWidget />

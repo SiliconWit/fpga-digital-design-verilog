@@ -12,6 +12,7 @@ import TawkWidget from '../../../../components/TawkWidget.astro';
 import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
 import InArticleAd from '../../../../components/InArticleAd.astro';
 import Copyright from '../../../../components/Copyright.astro';
+import BionicText from '../../../../components/BionicText.astro';
 import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
@@ -19,6 +20,8 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
 <UniversalContentContributors 
   contributors={frontmatter.contributors}
 />
+
+
 
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
@@ -41,6 +44,9 @@ By the end of this lesson, you will be able to:
 
 ## What We Are Building
 
+<InArticleAd />
+
+
 <Card title="An FPGA accelerator with an MCU front end" icon="star">
   You will put a small compute block on the FPGA (for example a fast edge-counter or a fixed-point filter) and have an STM32 or ESP32 act as the controller, sending commands and reading results over SPI.
 </Card>
@@ -48,6 +54,7 @@ By the end of this lesson, you will be able to:
 ## FPGA versus MCU versus DSP
 
 <InArticleAd />
+
 
 {/* CONTRIBUTOR: a clear comparison. Use the Tabs pattern or a table covering parallelism, determinism,
    flexibility, power, cost, and development effort. State the heuristics engineers actually use. */}
@@ -66,15 +73,24 @@ By the end of this lesson, you will be able to:
 
 ## System-on-Chip and Soft Cores
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: introduce SoC, and soft cores (for example a small RISC-V) running inside the FPGA.
    Keep it conceptual; the build below uses a separate MCU. */}
 
 ## Partitioning a System
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: worked reasoning on splitting a real example (say motor control or a camera pipeline)
    between FPGA and MCU. */}
 
 ## Building the FPGA-to-MCU Link
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: reuse the SPI block from Lesson 5, define a simple command/response protocol,
    and show both the Verilog side and the MCU-side code (link to the STM32/ESP32 courses). */}
@@ -84,6 +100,9 @@ The interface between two chips is where integration bugs hide, so make the hand
 :::
 
 ## Application Questions and Solutions
+
+<InArticleAd />
+
 
 ### Question 1: Should this go on the FPGA or the MCU?
 
@@ -108,6 +127,7 @@ A design needs to timestamp incoming pulses to within 10 nanoseconds and also fo
 
 <InArticleAd />
 
+
 | Concept | Key Takeaway |
 |---------|--------------|
 | FPGA versus MCU versus DSP | Match the device to parallelism, timing, and flexibility needs |
@@ -120,6 +140,8 @@ In [Lesson 9: From FPGA to ASIC](/education/fpga-digital-design-verilog/fpga-to-
 :::
 
 <FpgaDigitalDesignVerilogComments />
+
+
 
 <InArticleAd />
 <TawkWidget />

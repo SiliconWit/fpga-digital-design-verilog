@@ -12,6 +12,7 @@ import TawkWidget from '../../../../components/TawkWidget.astro';
 import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
 import InArticleAd from '../../../../components/InArticleAd.astro';
 import Copyright from '../../../../components/Copyright.astro';
+import BionicText from '../../../../components/BionicText.astro';
 import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
@@ -19,6 +20,8 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
 <UniversalContentContributors 
   contributors={frontmatter.contributors}
 />
+
+
 
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
@@ -41,6 +44,9 @@ By the end of this lesson, you will be able to:
 
 ## What We Are Building
 
+<InArticleAd />
+
+
 <Card title="An earlier design taken to GDSII" icon="star">
   You will pick a self-contained block from an earlier lesson, for example the UART transmitter or the PWM generator, and push it through OpenLane with the Sky130 PDK to produce a GDSII layout, the file a foundry uses to manufacture a chip.
 </Card>
@@ -49,10 +55,14 @@ By the end of this lesson, you will be able to:
 
 <InArticleAd />
 
+
 {/* CONTRIBUTOR: configurable fabric versus custom silicon. Trade-offs: non-recurring cost, volume,
    performance, power, and time to market. When a startup would tape out versus stay on FPGA. */}
 
 ## The ASIC Flow at a Glance
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: walk the stages once at a high level before running tools:
    RTL -> logic synthesis -> floorplan -> placement -> clock tree synthesis -> routing -> signoff -> GDSII.
@@ -60,10 +70,16 @@ By the end of this lesson, you will be able to:
 
 ## Setting Up Sky130 and OpenLane
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: how to install or run OpenLane (container-based is easiest) and where the Sky130 PDK
    comes from. Keep it reproducible. */}
 
 ## Running the Flow
+
+<InArticleAd />
+
 
 {/* CONTRIBUTOR: the config for the chosen block, running the flow, and reading the run summary
    (area, timing, DRC). */}
@@ -78,6 +94,9 @@ set ::env(CLOCK_PERIOD) "10.0"
 
 ## Reading the Results
 
+<InArticleAd />
+
+
 {/* CONTRIBUTOR: open the GDSII in a viewer (for example KLayout), point out the cell placement and
    routing layers, and connect the area and timing numbers back to the design. */}
 
@@ -86,6 +105,9 @@ Signoff is itself a measurement discipline: the flow reports timing slack, area,
 :::
 
 ## Application Questions and Solutions
+
+<InArticleAd />
+
 
 ### Question 1: FPGA prototype or straight to ASIC?
 
@@ -110,6 +132,7 @@ A team has a working design on an FPGA and expects to ship 5,000 units. A collea
 
 <InArticleAd />
 
+
 | Concept | Key Takeaway |
 |---------|--------------|
 | FPGA versus ASIC | Configurable fabric versus custom silicon, decided largely by volume |
@@ -126,6 +149,8 @@ You started by describing a single logic gate and finished by taking a design to
 :::
 
 <FpgaDigitalDesignVerilogComments />
+
+
 
 <InArticleAd />
 <TawkWidget />
