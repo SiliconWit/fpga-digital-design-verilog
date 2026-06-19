@@ -1,0 +1,125 @@
+---
+title: "Building MCU-Style Peripherals"
+description: "Build the blocks inside a microcontroller. PWM generators, UART transmit and receive, an SPI master, and shift registers, all in pure hardware. Run a UART transmitter and a PWM LED dimmer on the FPGA."
+contributors: "ian-kigen,sam-macharia"
+pubDate: 2026-06-19
+tags: ["verilog", "fpga", "pwm", "uart", "spi", "peripherals", "shift-register", "digital-design"]
+excerpt: "Every microcontroller hides a UART, timers, PWM channels, and an SPI engine. In this lesson you build them yourself in Verilog and watch them run on the FPGA, so the peripherals you have always configured by register suddenly make sense from the inside."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/building-mcu-peripherals.png"
+---
+
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
+import InArticleAd from '../../../../components/InArticleAd.astro';
+import Copyright from '../../../../components/Copyright.astro';
+import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
+
+<UniversalContentContributors 
+  contributors={frontmatter.contributors}
+/>
+
+import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
+
+When you set a baud rate or a PWM duty cycle on a microcontroller, you are configuring hardware someone designed in a language like Verilog. In this lesson you become that someone. You will build a PWM generator and a UART from scratch, and in doing so you will understand exactly what those peripheral registers control. #verilog #fpga #peripherals
+
+{/* CONTRIBUTOR NOTE
+   Goal: build real peripherals and connect the hardware view to the MCU register view the reader knows.
+   Keep all headings. Rules: no em dashes; titled code blocks; code out of <Steps>; no `$` for currency.
+*/}
+
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+
+1. **Design** a PWM generator with configurable duty cycle.
+2. **Build** a UART transmitter and explain framing, baud rate, and oversampling for receive.
+3. **Implement** an SPI master and a shift register.
+4. **Relate** each block back to the peripheral registers you configure on an MCU.
+
+## What We Are Building
+
+<Card title="A UART transmitter and a PWM LED dimmer" icon="star">
+  You will build a PWM generator that smoothly dims an LED, and a UART transmitter that sends characters to your computer, both running on the FPGA and verified first in simulation.
+</Card>
+
+## Counters as the Foundation: PWM
+
+<InArticleAd />
+
+{/* CONTRIBUTOR: build PWM from a free-running counter and a compare value. Connect duty cycle to the
+   compare register the reader sets on an STM32 or ESP32. */}
+
+```verilog title="pwm.v"
+module pwm #(parameter WIDTH = 8) (
+    input  wire             clk,
+    input  wire [WIDTH-1:0] duty,
+    output wire             out
+);
+    reg [WIDTH-1:0] count;
+    // CONTRIBUTOR: free-running counter and compare against duty
+    assign out = (count < duty);
+endmodule
+```
+
+## Serial Out: The UART Transmitter
+
+{/* CONTRIBUTOR: framing (start bit, data bits, stop bit), baud-rate generation from the clock,
+   and the transmit FSM. This is the centrepiece build of the lesson. */}
+
+## Serial In: The UART Receiver
+
+{/* CONTRIBUTOR: oversampling, start-bit detection, and sampling in the middle of each bit. */}
+
+## SPI Master and Shift Registers
+
+{/* CONTRIBUTOR: shift registers as the core of serial interfaces, then a simple SPI master
+   (clock, MOSI, MISO, chip select). */}
+
+:::tip[Instrument it]
+A UART or SPI block is exactly where a logic analyser earns its place. Capture the TX line while sending a known byte and confirm the start bit, bit order, and stop bit match your baud rate, this is the fastest way to catch an off-by-one in the bit timing. The same FPGA UART can later carry real telemetry: wired to an [ESP32](/education/iot-systems/), a stream of status bytes can be [forwarded to a dashboard and alerted on](https://siliconwit.io) when a value drifts out of range.
+:::
+
+## Application Questions and Solutions
+
+### Question 1: Garbled UART output
+
+Characters sent from your FPGA UART arrive as garbage on the terminal, though the start and stop bits look present on the analyser. What is the first thing to check?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Check the baud rate.** Garbled but framed data almost always means the transmit bit period does not match the receiver baud rate. ✅
+
+2. **Recompute the divider.** The baud-rate counter divides the FPGA clock. Confirm the divisor matches the actual board clock frequency, not an assumed one. ✅
+
+3. **Verify bit order.** UART sends the least significant bit first. A reversed shift direction produces consistent but wrong characters. ✅
+
+</Steps>
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| PWM | A counter plus a compare value sets the duty cycle |
+| UART | Framing and a baud-rate divider built from the system clock |
+| Oversampling | The receiver samples each bit near its centre |
+| SPI and shift registers | Serial interfaces are shift registers with clocking and select logic |
+| MCU link | These blocks are what peripheral registers configure |
+
+:::tip[Next Lesson]
+In [Lesson 6: Memory, FIFOs, and Clock-Domain Crossing](/education/fpga-digital-design-verilog/memory-fifos-clock-domain-crossing), you will store and buffer data inside the FPGA and learn the rules for moving signals safely between two clocks, a problem that bites every real design.
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />

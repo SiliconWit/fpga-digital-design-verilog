@@ -1,0 +1,130 @@
+---
+title: "First Design on a Real FPGA"
+description: "Take a design off the simulator and onto silicon. FPGA architecture (LUTs, flip-flops, block RAM), the open toolchain (Yosys, nextpnr, board flashing), pin constraints, and timing. Blink and a debounced counter on an iCE40 board."
+contributors: "ian-kigen,sam-macharia"
+pubDate: 2026-06-19
+tags: ["fpga", "ice40", "yosys", "nextpnr", "synthesis", "place-and-route", "timing", "verilog"]
+excerpt: "An FPGA is a chip full of configurable logic you wire up with Verilog. Learn what is actually inside it, how the open toolchain turns your code into a bitstream, how to map signals to physical pins, and what timing means, then run your first design on a real iCE40 board."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/first-fpga-design-ice40.png"
+---
+
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
+import InArticleAd from '../../../../components/InArticleAd.astro';
+import Copyright from '../../../../components/Copyright.astro';
+import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
+
+<UniversalContentContributors 
+  contributors={frontmatter.contributors}
+/>
+
+import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
+
+Until now your Verilog has lived inside a simulator. An FPGA lets it become a real, running circuit. Inside the chip are thousands of small lookup tables and flip-flops that the toolchain configures to match your design. This lesson takes you through that flow end to end and finishes with your code blinking a real LED. #fpga #ice40 #verilog
+
+{/* CONTRIBUTOR NOTE
+   Goal: first successful hardware run. This lesson OWNS the toolchain install instructions
+   (Yosys, nextpnr, icestorm/board tools) for Linux, macOS, and Windows. Confirm the recommended
+   board and price. Keep all headings. Rules: no em dashes; titled code blocks; no `$` for currency.
+*/}
+
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+
+1. **Describe** what is inside an FPGA: lookup tables, flip-flops, block RAM, and routing.
+2. **Run** the open toolchain to synthesise, place, route, and flash a design.
+3. **Map** top-level signals to physical pins with a constraints file.
+4. **Read** a basic timing report and understand the maximum clock frequency.
+
+## What We Are Building
+
+<Card title="Blink and a debounced button counter on an iCE40 board" icon="star">
+  You will flash a blinking LED to confirm the toolchain works, then build a counter driven by a debounced push button so you see input, sequential logic, and output all running on real hardware.
+</Card>
+
+**Hardware for this lesson:**
+
+| Item | Notes |
+|------|-------|
+| iCE40-based FPGA board | iCEBreaker or TinyFPGA BX, roughly 30 to 70 USD {/* CONTRIBUTOR: confirm exact board and price */} |
+| USB cable | For flashing the bitstream |
+| Push button and LED | Many boards include these on-board |
+
+## What Is Inside an FPGA
+
+<InArticleAd />
+
+{/* CONTRIBUTOR: explain LUTs, flip-flops, block RAM, DSP blocks, and the routing fabric.
+   Contrast with an MCU: an FPGA is configurable hardware, not a processor running instructions. */}
+
+## The Toolchain: From Verilog to Bitstream
+
+{/* CONTRIBUTOR: synthesis (Yosys) -> place and route (nextpnr) -> bitstream packing -> flashing.
+   Provide copy-paste commands and the install steps per OS. */}
+
+```bash title="build.sh"
+# CONTRIBUTOR: replace with the exact commands for the chosen board
+yosys -p "synth_ice40 -top top -json top.json" top.v
+nextpnr-ice40 --up5k --package sg48 --pcf board.pcf --json top.json --asc top.asc
+icepack top.asc top.bin
+iceprog top.bin
+```
+
+## Pin Constraints
+
+{/* CONTRIBUTOR: explain the .pcf file mapping top-level ports to physical pins, with an example. */}
+
+## Timing and Maximum Frequency
+
+{/* CONTRIBUTOR: introduce the timing report, setup constraint, and Fmax. Keep it intuitive:
+   logic between two flip-flops must settle within one clock period. */}
+
+:::tip[Instrument it]
+Once a design runs on the board, the fastest way to see what it is really doing is to bring internal signals out to spare pins and watch them on a logic analyser. A low-cost USB analyser such as a Saleae clone, or a scope on a single pin, confirms your counter increments at the rate you expect and that the debounced button is clean. When a project grows past the bench, an [ESP32 or STM32](/education/sensor-actuator-interfacing-stm32/) can read a status line from the FPGA and [stream](/education/iot-systems/) uptime or error counts to a live dashboard, so a deployed board can [report](https://siliconwit.io) that it is still healthy.
+:::
+
+## Application Questions and Solutions
+
+### Question 1: Works in simulation, wrong on the board
+
+A counter behaves perfectly in simulation but on the FPGA it counts erratically when the button is pressed. What is the most likely cause?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Suspect the input, not the logic.** Simulation used clean, ideal stimulus. A real mechanical button bounces, producing many fast edges per press. ✅
+
+2. **Add a debouncer.** Sample the button on the clock and require it to be stable for a set number of cycles before accepting a change. ✅
+
+3. **Confirm on hardware** with a logic analyser on the raw and debounced signals to see the bounce removed. ✅
+
+</Steps>
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| FPGA fabric | Lookup tables, flip-flops, and routing configured by your design |
+| Toolchain | Synthesis, place and route, pack, and flash |
+| Constraints | A pin-mapping file ties signals to physical pins |
+| Timing | Logic between flip-flops must settle within one clock period |
+| Real inputs | Physical signals bounce and need conditioning |
+
+:::tip[Next Lesson]
+In [Lesson 5: Building MCU-Style Peripherals](/education/fpga-digital-design-verilog/building-mcu-peripherals), you will build the blocks you normally take for granted inside a microcontroller, a PWM generator and a UART transmitter, and run them on the same board.
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />

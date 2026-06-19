@@ -1,0 +1,122 @@
+---
+title: "State Machines in Verilog"
+description: "Design circuits that remember. Finite state machines, Moore versus Mealy, state encoding (binary versus one-hot), and the clean two-block coding style. Build a traffic-light controller and a protocol-decoder FSM."
+contributors: "ian-kigen,sam-macharia"
+pubDate: 2026-06-19
+tags: ["verilog", "state-machines", "fsm", "moore", "mealy", "sequential-logic", "fpga", "digital-design"]
+excerpt: "Most useful digital systems have to remember what they are doing. The finite state machine is how hardware engineers describe that memory. Learn Moore and Mealy machines, state encoding, and the two-block coding style, then build a traffic-light controller and a protocol decoder."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/state-machines-verilog.png"
+---
+
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
+import InArticleAd from '../../../../components/InArticleAd.astro';
+import Copyright from '../../../../components/Copyright.astro';
+import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
+
+<UniversalContentContributors 
+  contributors={frontmatter.contributors}
+/>
+
+import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
+
+A combinational circuit always gives the same output for the same input. But a traffic light, a vending machine, and a communication protocol all behave differently depending on what happened before. They have state. The finite state machine is the tool digital designers use to describe that behaviour cleanly and turn it into reliable hardware. #verilog #fsm #digitaldesign
+
+{/* CONTRIBUTOR NOTE
+   Goal: the reader can design and code an FSM in the clean two-block style and verify it.
+   Keep all headings. Rules: no em dashes; titled code blocks; code out of <Steps>; no `$` for currency.
+*/}
+
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+
+1. **Draw** a state diagram for a sequential problem and translate it to Verilog.
+2. **Compare** Moore and Mealy machines and choose the right one.
+3. **Explain** binary versus one-hot state encoding and the trade-off on an FPGA.
+4. **Code** an FSM in the clean two-block (or three-block) style and verify it with a testbench.
+
+## What We Are Building
+
+<Card title="A traffic-light controller and a protocol decoder" icon="star">
+  You will build a traffic-light controller as a Moore machine with timed states, then a small serial-protocol decoder that recognises a start sequence, as a second, more demanding FSM.
+</Card>
+
+## What a Finite State Machine Is
+
+<InArticleAd />
+
+{/* CONTRIBUTOR: define states, transitions, inputs, outputs. Draw or embed a simple state diagram. */}
+
+## Moore versus Mealy
+
+{/* CONTRIBUTOR: Moore output depends only on state; Mealy output depends on state and input.
+   Give the practical consequence (timing, glitches) and when each is preferred. */}
+
+## State Encoding: Binary versus One-Hot
+
+{/* CONTRIBUTOR: explain how the encoding maps to flip-flops and why one-hot is often a good fit on
+   FPGAs (abundant flip-flops, simpler next-state logic). Mention `localparam` for state names. */}
+
+## The Two-Block Coding Style
+
+{/* CONTRIBUTOR: show the recommended structure: one clocked always block for the state register,
+   one combinational always block for next-state and output logic. This is the heart of the lesson. */}
+
+```verilog title="traffic_light.v"
+module traffic_light (
+    input  wire clk,
+    input  wire rst,
+    output reg  [1:0] light   // 00 red, 01 green, 10 yellow
+);
+    localparam RED = 2'd0, GREEN = 2'd1, YELLOW = 2'd2;
+    reg [1:0] state, next_state;
+
+    // CONTRIBUTOR: state register block (clocked) and next-state block (combinational) go here
+endmodule
+```
+
+## Application Questions and Solutions
+
+### Question 1: A state machine that locks up after reset
+
+An FSM works in simulation but, on power-up without an explicit reset, it sometimes freezes and never leaves its first state. What design habit prevents this?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Identify the cause.** Without a reset, the state register can power up in an undefined or unreachable state, with no transition out of it. ✅
+
+2. **Add a synchronous reset** that forces a known starting state, and make sure every defined state has a path back toward normal operation. ✅
+
+3. **Add a default branch** in the next-state logic so any unexpected state value returns to a safe state rather than sticking. ✅
+
+</Steps>
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| FSM | States, transitions, and outputs that capture sequential behaviour |
+| Moore versus Mealy | Moore output depends on state only, Mealy also on input |
+| Encoding | One-hot is often a good fit for FPGAs, binary is compact |
+| Two-block style | Separate clocked state register from combinational next-state logic |
+| Reset and default | Always provide a reset and a default branch to avoid lock-up |
+
+:::tip[Next Lesson]
+In [Lesson 4: First Design on a Real FPGA](/education/fpga-digital-design-verilog/first-fpga-design-ice40), you take a design off the simulator and onto a physical board for the first time, learning the FPGA toolchain, pin constraints, and timing along the way.
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />

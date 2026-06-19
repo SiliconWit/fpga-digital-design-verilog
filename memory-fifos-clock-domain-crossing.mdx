@@ -1,0 +1,134 @@
+---
+title: "Memory, FIFOs, and Clock-Domain Crossing"
+description: "Store and move data safely inside an FPGA. Inferring block RAM, building a FIFO, metastability, synchronisers, and crossing clock domains. Build a dual-clock FIFO that passes data between two clock domains."
+contributors: "ian-kigen,sam-macharia"
+pubDate: 2026-06-19
+tags: ["verilog", "fpga", "block-ram", "fifo", "clock-domain-crossing", "metastability", "synchronizer"]
+excerpt: "Real systems buffer data and run different parts at different clock rates. This lesson covers inferring block RAM, building a FIFO, and the one topic that catches almost every new FPGA engineer: moving a signal from one clock domain to another without corrupting it."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/memory-fifos-clock-domain-crossing.png"
+---
+
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
+import InArticleAd from '../../../../components/InArticleAd.astro';
+import Copyright from '../../../../components/Copyright.astro';
+import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
+
+<UniversalContentContributors 
+  contributors={frontmatter.contributors}
+/>
+
+import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
+
+A peripheral produces data faster than the rest of your design can consume it, or two parts of a system run on different clocks. Both situations need storage and careful handoff. Getting this wrong produces bugs that appear once an hour and vanish when you probe them. This lesson teaches the techniques that make data movement reliable. #verilog #fpga #cdc
+
+{/* CONTRIBUTOR NOTE
+   Goal: the reader can infer RAM, build a FIFO, and cross clock domains safely. This is the lesson
+   that prevents the worst intermittent FPGA bugs. Keep all headings. Rules: no em dashes; titled code;
+   code out of <Steps>; no `$` for currency.
+*/}
+
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+
+1. **Infer** block RAM from Verilog rather than building it from flip-flops.
+2. **Build** a synchronous FIFO with full and empty flags.
+3. **Explain** metastability and why a single flip-flop is not enough across clock domains.
+4. **Design** a two-flip-flop synchroniser and a safe clock-domain-crossing FIFO.
+
+## What We Are Building
+
+<Card title="A dual-clock FIFO" icon="star">
+  You will build a FIFO that accepts data on one clock and delivers it on another, the standard safe bridge between two clock domains, and test it with mismatched clocks in simulation.
+</Card>
+
+## Inferring Block RAM
+
+<InArticleAd />
+
+{/* CONTRIBUTOR: show the coding pattern the synthesiser recognises as block RAM, and contrast with
+   accidentally building RAM out of flip-flops (wasteful). */}
+
+## Building a Synchronous FIFO
+
+{/* CONTRIBUTOR: read and write pointers, full and empty detection, and depth. Single-clock first. */}
+
+## Metastability: Why One Flip-Flop Is Not Enough
+
+{/* CONTRIBUTOR: explain what happens when a signal changes near a clock edge, and why a captured value
+   can be neither 0 nor 1 for a moment. Keep it intuitive but correct. */}
+
+## The Two-Flip-Flop Synchroniser
+
+{/* CONTRIBUTOR: the standard fix for a single-bit signal crossing domains. Stress it works for one bit,
+   not for buses. */}
+
+```verilog title="synchronizer.v"
+module synchronizer (
+    input  wire clk,
+    input  wire async_in,
+    output wire sync_out
+);
+    reg ff1, ff2;
+    always @(posedge clk) begin
+        ff1 <= async_in;
+        ff2 <= ff1;
+    end
+    assign sync_out = ff2;
+endmodule
+```
+
+## Crossing a Bus: The Dual-Clock FIFO
+
+{/* CONTRIBUTOR: explain why multi-bit values need a FIFO or Gray-coded pointers rather than per-bit
+   synchronisers. Build the dual-clock FIFO here. */}
+
+:::tip[Instrument it]
+Clock-domain bugs are intermittent, so reproduce them on purpose before trusting a fix. In simulation, drive the two domains with clocks at awkward, non-integer ratios and run long. On hardware, expose the FIFO full and overflow flags on spare pins and watch them on a logic analyser under load. If the design ships in the field, those same counters (overflow events, dropped samples) are exactly the kind of health metric an [edge node can publish](https://siliconwit.io) so a rare fault is caught in the log rather than in person.
+:::
+
+## Application Questions and Solutions
+
+### Question 1: The bug that only appears in hardware
+
+A data path passes a multi-bit counter value from a fast clock to a slow one using a two-flip-flop synchroniser on each bit. It works most of the time but occasionally reads a wildly wrong value. Why?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Spot the misuse.** A two-flip-flop synchroniser is safe for a single bit only. Across a multi-bit bus, individual bits can settle on different clock edges. ✅
+
+2. **Understand the result.** During a transition the captured word can mix old and new bits, giving a value that never actually existed. ✅
+
+3. **Use the right structure.** Pass the data through a FIFO, or convert the pointer to Gray code so only one bit changes at a time. ✅
+
+</Steps>
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| Block RAM | Use the inference pattern, do not build large memory from flip-flops |
+| FIFO | Pointers plus full and empty flags buffer between producer and consumer |
+| Metastability | A signal captured near an edge can be momentarily undefined |
+| Synchroniser | Two flip-flops fix a single bit, never a bus |
+| CDC for buses | Use a FIFO or Gray-coded pointers |
+
+:::tip[Next Lesson]
+In [Lesson 7: Building a Mini CPU](/education/fpga-digital-design-verilog/building-a-mini-cpu), you bring the whole course together: memory, registers, and state machines combine into a small processor that fetches and executes instructions.
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />

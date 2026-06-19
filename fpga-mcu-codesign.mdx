@@ -1,0 +1,126 @@
+---
+title: "FPGA plus MCU Co-Design"
+description: "Decide what belongs in hardware and what belongs in firmware. FPGA versus MCU versus DSP trade-offs, system-on-chip concepts, soft cores, and interfacing an FPGA to a microcontroller. Build an FPGA accelerator that talks to an STM32 or ESP32 over SPI."
+contributors: "ian-kigen,sam-macharia"
+pubDate: 2026-06-19
+tags: ["fpga", "mcu", "co-design", "soc", "soft-core", "spi", "system-design", "verilog"]
+excerpt: "Real products rarely use an FPGA alone. The skill that employers value is knowing when a job belongs in hardware, when it belongs in firmware, and how to make an FPGA and a microcontroller work together. This lesson builds that judgement and a working FPGA-to-MCU link."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/fpga-mcu-codesign.png"
+---
+
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
+import InArticleAd from '../../../../components/InArticleAd.astro';
+import Copyright from '../../../../components/Copyright.astro';
+import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
+
+<UniversalContentContributors 
+  contributors={frontmatter.contributors}
+/>
+
+import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
+
+An FPGA is brilliant at parallel, timing-critical work and clumsy at the flexible, sequential logic a microcontroller handles with ease. Most platforms teach FPGA in isolation, which is why few engineers can answer the question that matters on the job: where should this part of the system live? This lesson answers it and then connects the two worlds. #fpga #mcu #systemdesign
+
+{/* CONTRIBUTOR NOTE
+   Goal: build system-level judgement (FPGA vs MCU vs DSP) and a real FPGA-to-MCU interface.
+   This co-design angle is the course's differentiator, give it weight. Keep all headings.
+   Rules: no em dashes; titled code blocks; code out of <Steps>; no `$` for currency.
+*/}
+
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+
+1. **Choose** between an FPGA, a microcontroller, and a DSP for a given task.
+2. **Explain** system-on-chip concepts and what a soft core is.
+3. **Partition** a system across an FPGA and an MCU sensibly.
+4. **Build** an SPI link between an FPGA accelerator and an STM32 or ESP32.
+
+## What We Are Building
+
+<Card title="An FPGA accelerator with an MCU front end" icon="star">
+  You will put a small compute block on the FPGA (for example a fast edge-counter or a fixed-point filter) and have an STM32 or ESP32 act as the controller, sending commands and reading results over SPI.
+</Card>
+
+## FPGA versus MCU versus DSP
+
+<InArticleAd />
+
+{/* CONTRIBUTOR: a clear comparison. Use the Tabs pattern or a table covering parallelism, determinism,
+   flexibility, power, cost, and development effort. State the heuristics engineers actually use. */}
+
+<Tabs>
+  <TabItem label="Choose an FPGA when">
+  {/* CONTRIBUTOR: true hardware parallelism, hard real-time timing, custom high-speed interfaces */}
+  </TabItem>
+  <TabItem label="Choose an MCU when">
+  {/* CONTRIBUTOR: flexible sequential logic, rich software ecosystem, lowest cost and power */}
+  </TabItem>
+  <TabItem label="Choose a DSP when">
+  {/* CONTRIBUTOR: heavy, regular math throughput with mature signal-processing libraries */}
+  </TabItem>
+</Tabs>
+
+## System-on-Chip and Soft Cores
+
+{/* CONTRIBUTOR: introduce SoC, and soft cores (for example a small RISC-V) running inside the FPGA.
+   Keep it conceptual; the build below uses a separate MCU. */}
+
+## Partitioning a System
+
+{/* CONTRIBUTOR: worked reasoning on splitting a real example (say motor control or a camera pipeline)
+   between FPGA and MCU. */}
+
+## Building the FPGA-to-MCU Link
+
+{/* CONTRIBUTOR: reuse the SPI block from Lesson 5, define a simple command/response protocol,
+   and show both the Verilog side and the MCU-side code (link to the STM32/ESP32 courses). */}
+
+:::tip[Instrument it]
+The interface between two chips is where integration bugs hide, so make the handshake visible. Put a logic analyser across the SPI bus and confirm the MCU command and the FPGA response match your protocol byte for byte. Expose a status register in the FPGA (busy, error, result-ready) that the MCU polls. That same register is a natural telemetry source: the [MCU can stream](/education/iot-systems/) the accelerator throughput or error count onward so the health of the combined system is [visible on a dashboard](https://siliconwit.io), not just on the bench.
+:::
+
+## Application Questions and Solutions
+
+### Question 1: Should this go on the FPGA or the MCU?
+
+A design needs to timestamp incoming pulses to within 10 nanoseconds and also format the results into JSON for a web request. How would you partition it?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Separate the two needs.** Nanosecond timestamping is hard real-time and parallel. JSON formatting and networking are flexible, sequential, library-heavy tasks. ✅
+
+2. **Put timing on the FPGA.** Capture and timestamp the pulses in hardware, where the timing is deterministic and independent of any software load. ✅
+
+3. **Put formatting on the MCU.** Hand the timestamps to the microcontroller over SPI, and let it build the JSON and handle the network, where a rich software stack already exists. ✅
+
+</Steps>
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| FPGA versus MCU versus DSP | Match the device to parallelism, timing, and flexibility needs |
+| SoC and soft cores | A processor can live inside the FPGA fabric |
+| Partitioning | Put hard real-time and parallel work in hardware, flexible work in firmware |
+| Co-design link | A simple SPI command and response protocol joins the two |
+
+:::tip[Next Lesson]
+In [Lesson 9: From FPGA to ASIC](/education/fpga-digital-design-verilog/fpga-to-asic-sky130-openlane), you take one of your designs the final step, through the open-source ASIC flow, to see how the same Verilog becomes a manufacturable chip.
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />

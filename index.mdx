@@ -1,0 +1,131 @@
+---
+title: "FPGA and Digital Design with Verilog"
+description: "Design real digital hardware in Verilog and run it on an FPGA. Nine lessons covering Verilog fundamentals, simulation and testbenches, state machines, FPGA toolchains, building MCU-style peripherals, memory and clock-domain crossing, a mini CPU, FPGA plus MCU co-design, and a capstone push from RTL to an ASIC with Sky130 and OpenLane."
+pubDate: 2026-06-19
+tags: ["fpga", "verilog", "digital-design", "rtl", "hdl", "state-machines", "testbench", "ice40", "yosys", "asic", "openlane", "sky130"]
+excerpt: "You already use UARTs, timers, PWM, and CPUs inside microcontrollers. This course teaches you to build them. Describe digital hardware in Verilog, verify it in simulation, run it on a real FPGA, and finish by taking a design through the open-source ASIC flow to GDSII."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/fpga-digital-design-verilog-overview.png"
+---
+
+import Copyright from '../../../../components/Copyright.astro';
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import { Card, CardGrid, Badge, Steps } from '@astrojs/starlight/components';
+
+You already use UARTs, timers, PWM channels, and CPU cores every time you program a microcontroller. This course teaches you to build them. You will describe digital hardware in Verilog, prove it works in simulation, run it on a real FPGA, and finish by pushing a design through the open-source ASIC flow to a manufacturable layout. #fpga #verilog #digitaldesign
+
+{/* CONTRIBUTOR NOTE: This is the course overview page. Keep the structure below (What You Will Learn, Lessons, Prerequisites, Tools and Hardware, Where This Connects). Fill each lesson card as lessons are completed. Follow the format in /education/digital-electronics/ and /education/planar-mechanics/. No em dashes, minimal emojis, no `$` for currency (write "30 USD"). */}
+
+## What You Will Learn
+
+<CardGrid>
+  <Card title="Describe hardware, not software" icon="open-book">
+    Write Verilog that synthesises into real gates and flip-flops. Understand the difference between combinational and sequential logic, blocking and non-blocking assignments, and why hardware is parallel by nature.
+  </Card>
+
+  <Card title="Verify before you build" icon="open-book">
+    Write self-checking testbenches and read waveforms, so a design is proven correct in simulation before it ever touches a board.
+  </Card>
+
+  <Card title="Run it on real silicon" icon="open-book">
+    Take a Verilog design through synthesis, place and route, and timing on a low-cost FPGA using a fully open toolchain.
+  </Card>
+
+  <Card title="Build the blocks inside an MCU" icon="open-book">
+    Create the peripherals you normally take for granted, a UART, a PWM generator, an SPI master, and even a small CPU, from scratch in hardware.
+  </Card>
+</CardGrid>
+
+## Lessons
+
+<CardGrid>
+  <Card title="Lesson 1: Verilog Fundamentals" icon="star">
+    [Start here](./verilog-fundamentals). Modules, ports, wires and registers, combinational versus sequential logic, and your first testbench.
+    **Practical:** recreate logic gates and a 4-bit adder in Verilog and simulate them.
+  </Card>
+
+  <Card title="Lesson 2: Simulation and Testbenches" icon="document">
+    [Open lesson](./simulation-and-testbenches). Why you simulate first, testbench structure, stimulus, self-checking assertions, and waveform analysis.
+    **Practical:** write a self-checking testbench and inspect signals in GTKWave.
+  </Card>
+
+  <Card title="Lesson 3: State Machines in Verilog" icon="document">
+    [Open lesson](./state-machines-verilog). Finite state machines, Moore versus Mealy, state encoding, and the clean two-block coding style.
+    **Practical:** a traffic-light controller and a protocol-decoder FSM.
+  </Card>
+
+  <Card title="Lesson 4: First Design on a Real FPGA" icon="document">
+    [Open lesson](./first-fpga-design-ice40). FPGA architecture (LUTs, flip-flops, block RAM), the open toolchain, pin constraints, and timing.
+    **Practical:** blink and a debounced counter on an iCE40 board.
+  </Card>
+
+  <Card title="Lesson 5: Building MCU-Style Peripherals" icon="document">
+    [Open lesson](./building-mcu-peripherals). PWM generators, UART transmit and receive, SPI, and shift registers in pure hardware.
+    **Practical:** a UART transmitter and a PWM LED dimmer running on the FPGA.
+  </Card>
+
+  <Card title="Lesson 6: Memory, FIFOs, and Clock-Domain Crossing" icon="document">
+    [Open lesson](./memory-fifos-clock-domain-crossing). Inferring block RAM, building FIFOs, metastability, synchronisers, and crossing clock domains safely.
+    **Practical:** a dual-clock FIFO passing data between two clock domains.
+  </Card>
+
+  <Card title="Lesson 7: Building a Mini CPU" icon="document">
+    [Open lesson](./building-a-mini-cpu). Datapath, ALU, register file, program counter, and instruction decode for a tiny instruction set.
+    **Practical:** an 8-bit CPU that executes a small program from memory.
+  </Card>
+
+  <Card title="Lesson 8: FPGA plus MCU Co-Design" icon="document">
+    [Open lesson](./fpga-mcu-codesign). When to choose FPGA versus MCU versus DSP, system-on-chip concepts, soft cores, and interfacing an FPGA to an MCU.
+    **Practical:** an FPGA accelerator that talks to an STM32 or ESP32 over SPI.
+  </Card>
+
+  <Card title="Lesson 9: From FPGA to ASIC" icon="document">
+    [Open lesson](./fpga-to-asic-sky130-openlane). The ASIC flow from RTL through synthesis, floorplan, place and route, to GDSII, using the Sky130 PDK and OpenLane.
+    **Practical:** take an earlier Verilog block all the way to a manufacturable layout.
+  </Card>
+</CardGrid>
+
+## Prerequisites
+
+:::note[Before you start]
+This course assumes you understand digital logic at the level of the [Digital Electronics and Logic](/education/digital-electronics/) course: number systems, logic gates, Boolean algebra, flip-flops, and counters. We do not re-teach those here. We start from how to describe that logic in Verilog and take it all the way to real hardware. Basic comfort with a command line and a text editor is enough on the software side.
+:::
+
+## Tools and Hardware
+
+<CardGrid>
+  <Card title="Open simulation toolchain" icon="setting">
+    Icarus Verilog for simulation and GTKWave for waveform viewing. Both are free, cross-platform, and used from Lesson 1, so you can complete the first three lessons with no hardware at all.
+  </Card>
+
+  <Card title="Open FPGA toolchain" icon="setting">
+    Yosys for synthesis, nextpnr for place and route, and the board flashing tools. A fully open flow with no vendor licences.
+  </Card>
+
+  <Card title="A low-cost FPGA board" icon="laptop">
+    An iCE40-based board such as the iCEBreaker or TinyFPGA BX (roughly 30 to 70 USD) is used from Lesson 4 onward. {/* CONTRIBUTOR: confirm the exact recommended board and price, and add a Parts Kit table here in the digital-electronics style if a kit is defined. */}
+  </Card>
+
+  <Card title="Open ASIC toolchain" icon="setting">
+    The Sky130 open process design kit and OpenLane, used in the final lesson to turn RTL into a GDSII layout.
+  </Card>
+</CardGrid>
+
+## Where This Connects
+
+<CardGrid>
+  <Card title="Comes after: Digital Electronics" icon="right-arrow">
+    [Digital Electronics and Logic](/education/digital-electronics/) teaches the logic principles this course assumes. Take it first if gates and flip-flops are new to you.
+  </Card>
+
+  <Card title="Pairs with: Embedded Programming" icon="right-arrow">
+    Once you have built peripherals in hardware, the [STM32](/education/embedded-programming-stm32/) and [ESP32](/education/embedded-programming-esp32/) courses show the software side of the same blocks, and Lesson 8 brings the two worlds together.
+  </Card>
+
+  <Card title="Feeds into: Sensor and Actuator Interfacing" icon="right-arrow">
+    Custom hardware interfaces connect naturally to the [sensor and actuator interfacing](/education/sensor-actuator-interfacing-stm32/) course when you need deterministic, high-speed I/O.
+  </Card>
+</CardGrid>
+
+<Copyright />
+
+<TawkWidget />

@@ -1,0 +1,132 @@
+---
+title: "From FPGA to ASIC"
+description: "Take your Verilog all the way to a manufacturable chip. The ASIC flow from RTL through synthesis, floorplan, place and route, to GDSII, using the open Sky130 process design kit and OpenLane. Push an earlier design through the flow."
+contributors: "ian-kigen,sam-macharia"
+pubDate: 2026-06-19
+tags: ["asic", "rtl", "sky130", "openlane", "gdsii", "synthesis", "place-and-route", "verilog", "fpga"]
+excerpt: "An FPGA configures existing hardware. An ASIC is hardware built for one design. In this capstone you take a block you already wrote and push it through the open-source ASIC flow with Sky130 and OpenLane, from RTL to a GDSII layout a foundry could actually manufacture."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/fpga-to-asic-sky130-openlane.png"
+---
+
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
+import InArticleAd from '../../../../components/InArticleAd.astro';
+import Copyright from '../../../../components/Copyright.astro';
+import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
+
+<UniversalContentContributors 
+  contributors={frontmatter.contributors}
+/>
+
+import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
+
+The same Verilog that configures an FPGA can also become a custom chip. Until recently, seeing that process required an expensive licence and a non-disclosure agreement. Open tools changed that. In this capstone you take a design you already built and run it through the real steps a chip goes through on its way to a foundry, and you finish with a layout you can view. #asic #sky130 #openlane
+
+{/* CONTRIBUTOR NOTE
+   Goal: demystify the ASIC flow with a hands-on open-source run. This is a capstone, not a semiconductor
+   physics course: stay at the flow level (RTL to GDSII), do not drift into transistor or fabrication theory.
+   Keep all headings. Rules: no em dashes; titled code/commands; no `$` for currency.
+*/}
+
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+
+1. **Contrast** an FPGA with an ASIC and explain when each makes sense.
+2. **Describe** the ASIC flow: synthesis, floorplan, placement, clock tree, routing, and signoff.
+3. **Run** OpenLane on the Sky130 PDK to take RTL to GDSII.
+4. **Open** and interpret the resulting layout at a basic level.
+
+## What We Are Building
+
+<Card title="An earlier design taken to GDSII" icon="star">
+  You will pick a self-contained block from an earlier lesson, for example the UART transmitter or the PWM generator, and push it through OpenLane with the Sky130 PDK to produce a GDSII layout, the file a foundry uses to manufacture a chip.
+</Card>
+
+## FPGA versus ASIC
+
+<InArticleAd />
+
+{/* CONTRIBUTOR: configurable fabric versus custom silicon. Trade-offs: non-recurring cost, volume,
+   performance, power, and time to market. When a startup would tape out versus stay on FPGA. */}
+
+## The ASIC Flow at a Glance
+
+{/* CONTRIBUTOR: walk the stages once at a high level before running tools:
+   RTL -> logic synthesis -> floorplan -> placement -> clock tree synthesis -> routing -> signoff -> GDSII.
+   A simple diagram of the stages helps a lot. */}
+
+## Setting Up Sky130 and OpenLane
+
+{/* CONTRIBUTOR: how to install or run OpenLane (container-based is easiest) and where the Sky130 PDK
+   comes from. Keep it reproducible. */}
+
+## Running the Flow
+
+{/* CONTRIBUTOR: the config for the chosen block, running the flow, and reading the run summary
+   (area, timing, DRC). */}
+
+```tcl title="config.tcl"
+# CONTRIBUTOR: minimal OpenLane config for the chosen design
+set ::env(DESIGN_NAME) "uart_tx"
+set ::env(VERILOG_FILES) "./src/uart_tx.v"
+set ::env(CLOCK_PORT) "clk"
+set ::env(CLOCK_PERIOD) "10.0"
+```
+
+## Reading the Results
+
+{/* CONTRIBUTOR: open the GDSII in a viewer (for example KLayout), point out the cell placement and
+   routing layers, and connect the area and timing numbers back to the design. */}
+
+:::tip[Instrument it]
+Signoff is itself a measurement discipline: the flow reports timing slack, area, and design-rule violations, and a clean tape-out means reading those numbers honestly rather than forcing the design through. Treat the run summary as your instrument, watch the worst negative slack and the DRC count the way you would watch a sensor reading, and tighten the design until they are in spec. The same mindset of [making a system report its own health](https://siliconwit.io) applies whether the system is a deployed sensor or a chip on its way to a foundry.
+:::
+
+## Application Questions and Solutions
+
+### Question 1: FPGA prototype or straight to ASIC?
+
+A team has a working design on an FPGA and expects to ship 5,000 units. A colleague argues they should tape out an ASIC immediately to cut unit cost. What is the flaw in that reasoning?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Weigh the non-recurring cost.** An ASIC tape-out carries large one-time mask and engineering costs that only pay off at high volume. ✅
+
+2. **Compare against volume.** Spread across 5,000 units, those one-time costs usually dwarf the per-unit saving, so an FPGA or a low-cost MCU is often cheaper overall at this scale. ✅
+
+3. **Consider risk and time.** An FPGA can be reprogrammed after a bug, a manufactured ASIC cannot. At modest volumes the flexibility and lower risk of the FPGA typically win. ✅
+
+</Steps>
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| FPGA versus ASIC | Configurable fabric versus custom silicon, decided largely by volume |
+| ASIC flow | RTL to GDSII through synthesis, placement, clock tree, and routing |
+| Sky130 and OpenLane | An open PDK and flow that make the process hands-on |
+| Signoff | Timing slack, area, and DRC are the numbers that gate a tape-out |
+
+{/* CONTRIBUTOR: close the course here. Congratulate the reader, summarise the journey from a single
+   gate to a manufacturable chip, and point back to related courses (embedded programming, sensor
+   interfacing) and to siliconwit.io for deploying instrumented designs. */}
+
+:::tip[You have finished the course]
+You started by describing a single logic gate and finished by taking a design to a manufacturable layout. From here, the [embedded programming](/education/embedded-programming-stm32/) courses show the software side of the same systems, and a custom hardware interface you design can be deployed and monitored through [siliconwit.io](https://siliconwit.io).
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />

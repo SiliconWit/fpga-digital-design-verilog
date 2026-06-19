@@ -1,0 +1,154 @@
+---
+title: "Verilog Fundamentals"
+description: "Write your first Verilog. Modules, ports, wires and registers, combinational versus sequential logic, blocking and non-blocking assignments, and a first testbench. Recreate logic gates and a 4-bit adder and simulate them with Icarus Verilog."
+contributors: "ian-kigen,sam-macharia"
+pubDate: 2026-06-19
+tags: ["verilog", "hdl", "modules", "combinational-logic", "sequential-logic", "fpga", "digital-design"]
+excerpt: "Verilog describes hardware, not a sequence of instructions. Learn modules, ports, wires and registers, the difference between combinational and sequential logic, and the blocking versus non-blocking rule, then recreate logic gates and a 4-bit adder and simulate them."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/verilog-fundamentals.png"
+---
+
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
+import InArticleAd from '../../../../components/InArticleAd.astro';
+import Copyright from '../../../../components/Copyright.astro';
+import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
+
+<UniversalContentContributors 
+  contributors={frontmatter.contributors}
+/>
+
+import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
+
+A microcontroller runs instructions one after another. The hardware inside it does not: every gate settles at once, in parallel. Verilog is a language for describing that parallel hardware. This lesson covers the smallest set of Verilog you need to describe real circuits, and ends with logic you can simulate on your own machine with no board required. #verilog #hdl #digitaldesign
+
+{/* CONTRIBUTOR NOTE
+   Goal of this lesson: get the reader writing and simulating Verilog with zero hardware.
+   Keep every section heading below. Fill the body with explanation, runnable code, and at least
+   one worked Application Question. Follow the format in /education/digital-electronics/.
+   Rules: no em dashes; minimal emojis; no `$` for currency (write "30 USD"); code blocks need a
+   title attribute; keep large code blocks OUT of <Steps> (it breaks MDX); avoid `<=` inside tables.
+*/}
+
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+
+1. **Write** a Verilog module with input and output ports.
+2. **Distinguish** combinational logic from sequential logic and choose `wire` versus `reg` correctly.
+3. **Apply** the blocking (`=`) versus non-blocking (`<=`) rule and explain why it matters.
+4. **Simulate** a design with Icarus Verilog and confirm it against a truth table.
+
+## What We Are Building
+
+<Card title="Logic gates and a 4-bit adder in Verilog" icon="star">
+  You will recreate the AND, OR, NOT, and XOR gates you built physically in Digital Electronics, this time as Verilog modules, then compose them into a 4-bit ripple-carry adder and simulate the whole thing.
+</Card>
+
+**Tools used in this lesson:**
+
+| Tool | Purpose |
+|------|---------|
+| Icarus Verilog (`iverilog`) | Compile and simulate Verilog |
+| GTKWave | View simulation waveforms |
+
+{/* CONTRIBUTOR: add a short install note per OS (Linux, macOS, Windows) or link to the toolchain setup section that Lesson 4 will own. No hardware in this lesson. */}
+
+## From Schematic to Source: The Module
+
+<InArticleAd />
+
+{/* CONTRIBUTOR: introduce the `module ... endmodule` block, port declarations, and how a module maps
+   to a reusable hardware block. Show the smallest possible example first. */}
+
+```verilog title="and_gate.v"
+module and_gate (
+    input  wire a,
+    input  wire b,
+    output wire y
+);
+    assign y = a & b;
+endmodule
+```
+
+## Wires versus Registers
+
+{/* CONTRIBUTOR: explain `wire` (driven continuously, combinational) versus `reg` (holds a value,
+   assigned in procedural blocks). Stress that `reg` does NOT always mean a hardware register. */}
+
+## Combinational Logic: `assign` and `always @(*)`
+
+{/* CONTRIBUTOR: cover continuous assignment and the combinational always block. Recreate OR, NOT, XOR.
+   Build the 4-bit adder here. */}
+
+## Sequential Logic: `always @(posedge clk)`
+
+{/* CONTRIBUTOR: introduce the clocked always block and the idea of state that updates on a clock edge.
+   Keep it light; Lesson 3 goes deep on sequential design. */}
+
+## The Blocking versus Non-Blocking Rule
+
+{/* CONTRIBUTOR: the single most common beginner bug. State the rule plainly:
+   use `=` (blocking) in combinational always blocks, use `<=` (non-blocking) in clocked always blocks.
+   Show a before/after example of the bug it causes. */}
+
+## Application Questions and Solutions
+
+{/* CONTRIBUTOR: this is the worked-example format borrowed from /education/planar-mechanics/.
+   Pose a concrete question, then hide the full solution in a <details> block using <Steps>.
+   Add two or three of these per lesson. One stub is provided below as the pattern to follow. */}
+
+### Question 1: Build a 2-to-1 multiplexer
+
+Write a Verilog module for a 2-to-1 multiplexer with inputs `a`, `b`, a select line `sel`, and output `y`, then describe how you would confirm it works.
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Declare the module and ports.** One output `y`, three inputs `a`, `b`, `sel`. ✅
+
+2. **Describe the logic.** A multiplexer passes `a` when `sel` is 0 and `b` when `sel` is 1. ✅
+
+3. **Confirm against the truth table** in simulation for all four combinations of `sel` and the chosen input. ✅
+
+</Steps>
+
+```verilog title="mux2.v"
+module mux2 (
+    input  wire a,
+    input  wire b,
+    input  wire sel,
+    output wire y
+);
+    assign y = sel ? b : a;
+endmodule
+```
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| Module | The reusable unit of hardware, with declared input and output ports |
+| `wire` versus `reg` | `wire` for continuous combinational drive, `reg` for values assigned in procedural blocks |
+| Combinational versus sequential | Combinational settles immediately, sequential updates on a clock edge |
+| Blocking versus non-blocking | `=` in combinational blocks, `<=` in clocked blocks |
+
+{/* CONTRIBUTOR: close with a short paragraph linking forward, then keep the Next Lesson tip below. */}
+
+:::tip[Next Lesson]
+In [Lesson 2: Simulation and Testbenches](/education/fpga-digital-design-verilog/simulation-and-testbenches), you will write a self-checking testbench for the adder you built here and learn to read its behaviour in a waveform viewer, so a design is proven correct before it ever reaches a board.
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />

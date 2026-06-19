@@ -1,0 +1,128 @@
+---
+title: "Simulation and Testbenches"
+description: "Prove a design works before you build it. Testbench structure, applying stimulus, self-checking assertions, dumping waveforms, and reading them in GTKWave. Write a self-checking testbench for a 4-bit adder."
+contributors: "ian-kigen,sam-macharia"
+pubDate: 2026-06-19
+tags: ["verilog", "testbench", "simulation", "gtkwave", "icarus-verilog", "verification", "fpga"]
+excerpt: "Hardware is expensive to debug and slow to reprogram, so you verify it in simulation first. Learn how a testbench drives stimulus, checks results automatically, and dumps waveforms you can inspect, then write a self-checking testbench for a 4-bit adder."
+heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/simulation-and-testbenches.png"
+---
+
+import TawkWidget from '../../../../components/TawkWidget.astro';
+import UniversalContentContributors from '../../../../components/UniversalContentContributors.astro';
+import InArticleAd from '../../../../components/InArticleAd.astro';
+import Copyright from '../../../../components/Copyright.astro';
+import TailwindWrapper from '../../../../components/TailwindWrapper.jsx';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/starlight/components';
+
+<UniversalContentContributors 
+  contributors={frontmatter.contributors}
+/>
+
+import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
+
+A logic bug on a breadboard costs you a rewire. The same bug in a chip costs a respin. That is why hardware engineers prove a design correct in simulation before committing it to silicon. A testbench is the harness that does this: it feeds inputs to your design, watches the outputs, and tells you whether they are right. #verilog #verification #simulation
+
+{/* CONTRIBUTOR NOTE
+   Goal: the reader can write a self-checking testbench and read a waveform. Still no hardware.
+   Keep all headings. Rules: no em dashes; code blocks titled; keep code out of <Steps>; no `$` for currency.
+*/}
+
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+
+1. **Structure** a Verilog testbench: clock generation, stimulus, and result checking.
+2. **Write** self-checking assertions so the simulator reports pass or fail without you reading every value.
+3. **Dump** signals to a waveform file and inspect them in GTKWave.
+4. **Diagnose** a failing design from its waveform.
+
+## What We Are Building
+
+<Card title="A self-checking testbench for the 4-bit adder" icon="star">
+  You will wrap the adder from Lesson 1 in a testbench that applies many input combinations, compares each result against the expected sum, and prints a clear pass or fail summary.
+</Card>
+
+## Anatomy of a Testbench
+
+<InArticleAd />
+
+{/* CONTRIBUTOR: explain the testbench module has no ports, instantiates the design under test (DUT),
+   generates a clock, applies stimulus in an initial block, and finishes with $finish. */}
+
+```verilog title="adder_tb.v"
+`timescale 1ns/1ps
+module adder_tb;
+    reg  [3:0] a, b;
+    reg        cin;
+    wire [3:0] sum;
+    wire       cout;
+
+    // CONTRIBUTOR: instantiate the design under test here
+
+    initial begin
+        $dumpfile("adder_tb.vcd");
+        $dumpvars(0, adder_tb);
+        // CONTRIBUTOR: apply stimulus and checks here
+        $finish;
+    end
+endmodule
+```
+
+## Generating Stimulus
+
+{/* CONTRIBUTOR: show directed stimulus and a simple loop over input combinations. */}
+
+## Self-Checking with Assertions
+
+{/* CONTRIBUTOR: show comparing the DUT output against a reference computed in the testbench,
+   and using $display / $error to report mismatches. Emphasise that a good testbench needs no human
+   to read every value. */}
+
+## Dumping and Reading Waveforms
+
+{/* CONTRIBUTOR: cover $dumpfile / $dumpvars, running iverilog + vvp, opening the .vcd in GTKWave,
+   and how to add signals and zoom. A labelled screenshot helps here. */}
+
+## Application Questions and Solutions
+
+### Question 1: Why did the sum look correct but the carry was wrong?
+
+A learner reports that their adder testbench shows the correct `sum` but `cout` is always zero. The waveform shows `cout` flat across every input. What is the likely cause and how would you confirm it?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Read the waveform first.** A signal that never changes usually means it is undriven or stuck, not miscomputed. ✅
+
+2. **Check the connection.** The most common cause is that `cout` was declared but never connected to the adder instance, so it floats. Trace the port mapping. ✅
+
+3. **Confirm in simulation.** After fixing the connection, re-run and verify `cout` goes high exactly when the 4-bit sum overflows. ✅
+
+</Steps>
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| Testbench | A port-less module that drives and checks the design under test |
+| Self-checking | The simulator reports pass or fail, you do not eyeball every value |
+| Waveform dump | `$dumpfile` and `$dumpvars` produce a VCD you open in GTKWave |
+| Debugging | A flat signal usually means undriven, not miscomputed |
+
+:::tip[Next Lesson]
+In [Lesson 3: State Machines in Verilog](/education/fpga-digital-design-verilog/state-machines-verilog), you will design circuits that remember where they are, starting with a traffic-light controller, and use the testbench skills from this lesson to verify their behaviour over time.
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />
