@@ -155,3 +155,212 @@ You started by describing a single logic gate and finished by taking a design to
 <InArticleAd />
 <TawkWidget />
 <Copyright />
+
+
+
+---
+title: "Introduction to ASIC Design Flow: RTL to GDSII"
+description: "An overview of the Application-Specific Integrated Circuit (ASIC) design flow from Register-Transfer Level (RTL) code to the final GDSII layout."
+---
+
+# Introduction to ASIC Design Flow: RTL to GDSII
+
+## What is an ASIC?
+
+An **Application-Specific Integrated Circuit (ASIC)** is a microchip designed for a special application—such as a specialized telecommunications network processor or a biomedical sensor interface—rather than intended for general-purpose use like a standard CPU.
+
+## The RTL to GDSII Pipeline
+
+The journey from hardware code to physical layout involves several critical automated stages. OpenLane 2 (the tool we will install next) handles this entire pipeline automatically using a suite of open-source EDA tools.
+
+### 1. RTL Design & Verification
+The process begins with **Register-Transfer Level (RTL)** code written in a hardware description language like Verilog or SystemVerilog. This code describes the logic, behavior, and data flow of the circuit. 
+
+### 2. Logic Synthesis
+The RTL code is translated into a gate-level netlist. The synthesizer maps the behavioral code to actual physical logic gates (AND, OR, NOT, Flip-Flops) provided by a specific foundry's Process Design Kit (PDK), such as the open-source **SkyWater 130nm PDK**. 
+
+### 3. Floorplanning & Power Planning
+* **Floorplanning:** Determines the physical size of the chip core, creates the die boundary, and places major macro blocks (like RAM or specialized IP) and I/O pins.
+* **Power Planning (PDN):** Creates the Power Distribution Network, a grid of horizontal and vertical metal straps that ensures every standard cell gets adequate voltage and ground connections without significant voltage drop.
+
+### 4. Placement
+The standard cells from the synthesized netlist are physically placed onto the floorplan rows. This happens in two phases:
+* **Global Placement:** A rough calculation to place connected cells near each other to minimize wire length.
+* **Detailed Placement:** Exact alignment and legalization to ensure cells fit neatly into the grid and do not overlap.
+
+### 5. Clock Tree Synthesis (CTS)
+The clock signal must reach every sequential element (like flip-flops) at exactly the same time to avoid timing violations. CTS builds a branched "tree" of buffers to distribute the clock evenly across the entire chip, minimizing clock skew.
+
+### 6. Routing
+Metal wires are drawn to connect all the placed standard cells according to the netlist. 
+* **Global Routing:** Plans the general paths for the wires across the chip.
+* **Detailed Routing:** Assigns the actual physical metal layers and tracks, ensuring no short circuits occur.
+
+### 7. Signoff and Verification
+Before the chip can be manufactured, it must pass strict checks:
+* **Static Timing Analysis (STA):** Ensures the circuit meets all speed and timing constraints.
+* **Design Rule Checking (DRC):** Verifies the physical layout meets the manufacturing rules of the foundry (e.g., minimum wire width and spacing).
+* **Layout Versus Schematic (LVS):** Confirms the final physical layout exactly matches the logic defined in the original netlist.
+
+### 8. GDSII Generation
+The final output is a **GDSII** (Graphic Data System II) file. This is the industry-standard binary file format representing the planar geometric shapes, text labels, and layer information of the layout. This file is sent directly to the semiconductor foundry to manufacture the physical chip.
+
+---
+
+---
+title: "System Setup and Tools Installation"
+description: "Step-by-step guide to installing OpenLane 2, Docker, and necessary dependencies on Fedora."
+---
+## Prerequisites
+
+* **OS:** Fedora 
+
+## Step 1: Update Fedora and Install Dependencies
+
+Open a terminal and ensure your system packages are up to date:
+
+```bash
+sudo dnf update -y
+```
+Install essential tools:
+```bash
+sudo dnf install -y python3 python3-pip python3-devel git make gcc gcc-c++ wget
+```
+Upgrade pip:
+```bash
+python3 -m pip install --upgrade pip
+```
+## Step 2: Install Docker
+Docker is required to run OpenLane 2 in a containerized environment.
+
+### Install required packages:
+```bash
+sudo dnf install -y dnf-plugins-core
+```
+Add the Docker repository:
+```bash
+sudo dnf config-manager addrepo --from-repofile=[https://download.docker.com/linux/fedora/docker-ce.repo](https://download.docker.com/linux/fedora/docker-ce.repo)
+```
+
+### Install Docker:
+```bash
+sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable docker
+sudo systemctl start docker
+```
+Verify Docker is running:
+```bash
+sudo systemctl status docker
+```
+You should see "active (running)" in green.
+
+### Add Your User to Docker Group (Optional but Recommended)
+Important: Log out and log back in (or reboot) for this change to take effect.
+
+### Verify you can run Docker without sudo:
+```bash
+docker run hello-world
+```
+## Step 3: Install Python 3.12 and OpenLane 2
+### Install Python 3.12
+Fedora comes with Python 3.14 by default, but OpenLane 2 has better compatibility with Python 3.12:
+```bash
+# Install Python 3.12
+sudo dnf install -y python3.12
+
+# Verify installation
+/usr/bin/python3.12 --version
+```
+### Install pip for Python 3.12
+```bash
+# Install pip using ensurepip
+/usr/bin/python3.12 -m ensurepip --upgrade
+
+# Verify pip installation
+/usr/bin/python3.12 -m pip --version
+```
+### Install OpenLane 2
+Install OpenLane 2 from PyPI using Python 3.12:
+```bash
+/usr/bin/python3.12 -m pip install openlane
+```
+### Verify Installation
+Check that OpenLane is installed:
+```bash
+/usr/bin/python3.12 -m openlane --version
+```
+You should see the version number (e.g., 2.x.x).
+
+## Step 4: Pull Docker Images and Run Smoke Test
+### Pull the OpenLane Docker Image
+This downloads the pre-built Docker image with all EDA tools:
+```bash
+/usr/bin/python3.12 -m openlane --dockerized --smoke-test
+```
+This command will:
+
+Pull the Docker image (first time only, ~5-10 minutes depending on connection)
+Run a basic smoke test to verify everything works
+Display "PASS" if successful
+
+### Verify Docker Image
+List Docker images to confirm:
+```bash
+docker images | grep openlane
+```
+## Step 5: Run Your First Design - 4-Bit Counter
+### Create Design Directory and Files
+```bash
+mkdir -p ~/openlane_designs/counter_4bit
+cd ~/openlane_designs/counter_4bit
+```
+Create the Verilog file (counter_4bit.v):
+```bash
+cat > counter_4bit.v <<'EOF'
+module counter_4bit (
+    input wire clk,
+    input wire rst,
+    input wire enable,
+    output reg [3:0] count
+);
+    always @(posedge clk) begin
+        if (rst)
+            count <= 4'b0000;
+        else if (enable)
+            count <= count + 1'b1;
+    end
+endmodule
+EOF
+```
+Create the config file (config.json):
+```bash
+cat > config.json <<'EOF'
+{
+    "DESIGN_NAME": "counter_4bit",
+    "VERILOG_FILES": "dir::counter_4bit.v",
+    "CLOCK_PORT": "clk",
+    "CLOCK_PERIOD": 10.0,
+    "FP_SIZING": "absolute",
+    "DIE_AREA": "0 0 100 100",
+    "FP_CORE_UTIL": 40,
+    "PL_TARGET_DENSITY": 0.50
+}
+EOF
+```
+### Run OpenLane Flow
+```bash
+/usr/bin/python3.12 -m openlane --dockerized --run-tag first_run .
+```
+This will:
+
+Synthesize the Verilog code
+
+Place and route the design
+
+Generate the final GDSII layout
+
+Create results in runs/first_run/ directory
+
+The flow takes 5-10 minutes. When complete, you'll find your chip layout in:
+runs/first_run/results/final/gds/counter_4bit.gds
+
