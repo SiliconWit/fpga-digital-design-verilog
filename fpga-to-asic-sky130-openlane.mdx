@@ -158,12 +158,10 @@ You started by describing a single logic gate and finished by taking a design to
 
 
 
----
-title: "Introduction to ASIC Design Flow: RTL to GDSII"
-description: "An overview of the Application-Specific Integrated Circuit (ASIC) design flow from Register-Transfer Level (RTL) code to the final GDSII layout."
----
+
 
 # Introduction to ASIC Design Flow: RTL to GDSII
+An overview of the Application-Specific Integrated Circuit (ASIC) design flow from Register-Transfer Level (RTL) code to the final GDSII layout.
 
 ## What is an ASIC?
 
@@ -205,10 +203,8 @@ Before the chip can be manufactured, it must pass strict checks:
 ### 8. GDSII Generation
 The final output is a **GDSII** (Graphic Data System II) file. This is the industry-standard binary file format representing the planar geometric shapes, text labels, and layer information of the layout. This file is sent directly to the semiconductor foundry to manufacture the physical chip.
 
----
 
----
-title: "System Setup and Tools Installation"
+## System Setup and Tools Installation
 description: "Step-by-step guide to installing OpenLane 2, Docker, and necessary dependencies on Fedora."
 ---
 ## Prerequisites
@@ -299,9 +295,9 @@ This downloads the pre-built Docker image with all EDA tools:
 ```
 This command will:
 
-Pull the Docker image (first time only, ~5-10 minutes depending on connection)
-Run a basic smoke test to verify everything works
-Display "PASS" if successful
+* *Pull the Docker image (first time only, ~5-10 minutes depending on connection)
+* *Run a basic smoke test to verify everything works
+* *Display "PASS" if successful
 
 ### Verify Docker Image
 List Docker images to confirm:
@@ -353,13 +349,10 @@ EOF
 ```
 This will:
 
-Synthesize the Verilog code
-
-Place and route the design
-
-Generate the final GDSII layout
-
-Create results in runs/first_run/ directory
+* Synthesize the Verilog code
+* Place and route the design
+* Generate the final GDSII layout
+* Create results in runs/first_run/ directory
 
 The flow takes 5-10 minutes. When complete, you'll find your chip layout in:
 runs/first_run/results/final/gds/counter_4bit.gds
