@@ -1,10 +1,10 @@
 ---
 title: "Verilog Fundamentals"
-description: "Write your first Verilog. Modules, ports, wires and registers, combinational versus sequential logic, blocking and non-blocking assignments, and a first testbench. Recreate logic gates and a 4-bit adder and simulate them with Icarus Verilog."
+description: "Write your first Verilog modules and understand what they become in hardware. Ports, wire versus reg, the three modelling styles, combinational and sequential logic, hierarchy, and the blocking versus non-blocking rule. Build logic gates, a 4-bit adder, and a counter, then simulate them."
 contributors: "ian-kigen,sam-macharia"
 pubDate: 2026-06-19
-tags: ["verilog", "hdl", "modules", "combinational-logic", "sequential-logic", "fpga", "digital-design"]
-excerpt: "Verilog describes hardware, not a sequence of instructions. Learn modules, ports, wires and registers, the difference between combinational and sequential logic, and the blocking versus non-blocking rule, then recreate logic gates and a 4-bit adder and simulate them."
+tags: ["verilog", "hdl", "rtl", "digital-design", "iverilog", "gtkwave", "fpga", "combinational-logic", "sequential-logic"]
+excerpt: "A microcontroller runs instructions one after another. Verilog does something different: it describes hardware that all exists at once. This lesson teaches you to write that description, from a single AND gate to a counter, and to run it in simulation with no board on your desk."
 heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/verilog-fundamentals.png"
 ---
 
@@ -25,32 +25,26 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
 
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
-A microcontroller runs instructions one after another. The hardware inside it does not: every gate settles at once, in parallel. Verilog is a language for describing that parallel hardware. This lesson covers the smallest set of Verilog you need to describe real circuits, and ends with logic you can simulate on your own machine with no board required. #verilog #hdl #digitaldesign
-
-{/* CONTRIBUTOR NOTE
-   Goal of this lesson: get the reader writing and simulating Verilog with zero hardware.
-   Keep every section heading below. Fill the body with explanation, runnable code, and at least
-   one worked Application Question. Follow the format in /education/digital-electronics/.
-   Rules: no em dashes; minimal emojis; no `$` for currency (write "30 USD"); code blocks need a
-   title attribute; keep large code blocks OUT of <Steps> (it breaks MDX); avoid `<=` inside tables.
-*/}
+A microcontroller runs your instructions one after another, however fast the clock. Verilog does something else entirely: it describes hardware, and hardware does everything at the same time. That single difference is what trips up almost every programmer who comes to it, and it is what this lesson exists to fix. #verilog #hdl #digitaldesign
 
 ## Learning Objectives
 
 By the end of this lesson, you will be able to:
 
-1. **Write** a Verilog module with input and output ports.
+1. **Write** a Verilog module with input and output ports, and explain what it becomes in gates.
 2. **Distinguish** combinational logic from sequential logic and choose `wire` versus `reg` correctly.
-3. **Apply** the blocking (`=`) versus non-blocking (`<=`) rule and explain why it matters.
-4. **Simulate** a design with Icarus Verilog and confirm it against a truth table.
+3. **Describe** the same circuit three ways, structurally, in dataflow, and behaviourally, and say when each is appropriate.
+4. **Apply** the blocking (`=`) versus non-blocking (`<=`) rule and explain the bug it prevents.
+5. **Compose** small modules into a larger design using hierarchy.
+6. **Simulate** a design with Icarus Verilog and confirm it against a truth table.
 
 ## What We Are Building
 
 <InArticleAd />
 
 
-<Card title="Logic gates and a 4-bit adder in Verilog" icon="star">
-  You will recreate the AND, OR, NOT, and XOR gates you built physically in Digital Electronics, this time as Verilog modules, then compose them into a 4-bit ripple-carry adder and simulate the whole thing.
+<Card title="Logic gates, a 4-bit adder, and a counter" icon="star">
+  You will recreate the AND, OR, NOT, and XOR gates you built physically in Digital Electronics, this time as Verilog modules. Then you will compose them into a 4-bit ripple-carry adder, write a counter that advances on a clock edge, and simulate all of it without touching a board.
 </Card>
 
 **Tools used in this lesson:**
@@ -59,16 +53,87 @@ By the end of this lesson, you will be able to:
 |------|---------|
 | Icarus Verilog (`iverilog`) | Compile and simulate Verilog |
 | GTKWave | View simulation waveforms |
+| A text editor | VS Code with a Verilog extension is fine, so is anything else |
 
-{/* CONTRIBUTOR: add a short install note per OS (Linux, macOS, Windows) or link to the toolchain setup section that Lesson 4 will own. No hardware in this lesson. */}
+No hardware is needed. You will not need an FPGA board until Lesson 4.
+
+### Installing the Tools
+
+<Tabs>
+<TabItem label="Ubuntu / Debian">
+
+```bash title="Install on Ubuntu or Debian"
+sudo apt update
+sudo apt install iverilog gtkwave
+```
+
+</TabItem>
+<TabItem label="Fedora">
+
+```bash title="Install on Fedora"
+sudo dnf install iverilog gtkwave
+```
+
+</TabItem>
+<TabItem label="macOS">
+
+```bash title="Install on macOS with Homebrew"
+brew install icarus-verilog
+brew install --cask gtkwave
+```
+
+</TabItem>
+<TabItem label="Windows">
+
+```powershell title="Install on Windows"
+# Easiest route: install both from the iverilog Windows bundle
+winget install --id IcarusVerilog.IcarusVerilog
+
+# Or use WSL2 and follow the Ubuntu instructions above,
+# which is the smoother path if you plan to reach Lesson 9.
+```
+
+</TabItem>
+</Tabs>
+
+Check that both work before going further:
+
+```bash title="Verify the install"
+iverilog -V
+gtkwave --version
+```
+
+## Why a Hardware Description Language
+
+<InArticleAd />
+
+
+A program is a list of steps. A circuit is a shape. An HDL exists because you need a text file that describes a shape, not a sequence, and because that description has to be precise enough for a tool to turn into real gates.
+
+Verilog does three jobs at once:
+
+- **It documents the design** in a form another engineer can read.
+- **It simulates**, so you can prove the design behaves correctly before committing it to anything physical.
+- **It synthesises**, meaning a tool reads it and produces an actual arrangement of gates and flip-flops.
+
+That third job is the one with teeth. Anything you write has to be something hardware can physically be, and a good deal of legal Verilog is not synthesisable at all. Simulation will happily run a delay like `#50`, but no gate on earth implements "wait fifty nanoseconds."
+
+The level you will write at is called **RTL**, or register transfer level. The name is literal: you describe what combinational logic sits between the registers, and what moves from one register to the next on each clock edge. Get comfortable thinking in those terms and the rest of the course follows.
+
+Verilog was created by Gateway Design Automation in the 1980s, became an IEEE standard, and remains one of the two dominant HDLs alongside VHDL. This course uses Verilog throughout.
 
 ## From Schematic to Source: The Module
 
 <InArticleAd />
 
 
-{/* CONTRIBUTOR: introduce the `module ... endmodule` block, port declarations, and how a module maps
-   to a reusable hardware block. Show the smallest possible example first. */}
+Everything in Verilog lives inside a **module**. A module has input ports, output ports, and logic in between. It is the unit of reuse, the same way a chip on a breadboard is: you wire up its pins and you do not care what is inside until you need to.
+
+![Verilog Module Structure](./Images/VerilogModule.png)
+
+*Figure: a module is a block with declared ports and internal logic*
+
+Here is the smallest useful one, a single AND gate:
 
 ```verilog title="and_gate.v"
 module and_gate (
@@ -80,259 +145,41 @@ module and_gate (
 endmodule
 ```
 
-## Wires versus Registers
+Read it as a wiring instruction, not an instruction to execute. It says: there is a block called `and_gate`, it has two input pins and one output pin, and the output pin is permanently driven by the AND of the two inputs. There is no "when" about it. Change `a` and `y` follows, as fast as the gate can manage.
 
-<InArticleAd />
+### Module Syntax
 
-
-{/* CONTRIBUTOR: explain `wire` (driven continuously, combinational) versus `reg` (holds a value,
-   assigned in procedural blocks). Stress that `reg` does NOT always mean a hardware register. */}
-
-## Combinational Logic: `assign` and `always @(*)`
-
-<InArticleAd />
-
-
-{/* CONTRIBUTOR: cover continuous assignment and the combinational always block. Recreate OR, NOT, XOR.
-   Build the 4-bit adder here. */}
-
-## Sequential Logic: `always @(posedge clk)`
-
-<InArticleAd />
-
-
-{/* CONTRIBUTOR: introduce the clocked always block and the idea of state that updates on a clock edge.
-   Keep it light; Lesson 3 goes deep on sequential design. */}
-
-## The Blocking versus Non-Blocking Rule
-
-<InArticleAd />
-
-
-{/* CONTRIBUTOR: the single most common beginner bug. State the rule plainly:
-   use `=` (blocking) in combinational always blocks, use `<=` (non-blocking) in clocked always blocks.
-   Show a before/after example of the bug it causes. */}
-
-## Application Questions and Solutions
-
-<InArticleAd />
-
-
-{/* CONTRIBUTOR: this is the worked-example format borrowed from /education/planar-mechanics/.
-   Pose a concrete question, then hide the full solution in a <details> block using <Steps>.
-   Add two or three of these per lesson. One stub is provided below as the pattern to follow. */}
-
-### Question 1: Build a 2-to-1 multiplexer
-
-Write a Verilog module for a 2-to-1 multiplexer with inputs `a`, `b`, a select line `sel`, and output `y`, then describe how you would confirm it works.
-
-<details>
-<summary>**Click to reveal the solution**</summary>
-
-<Steps>
-
-1. **Declare the module and ports.** One output `y`, three inputs `a`, `b`, `sel`. ✅
-
-2. **Describe the logic.** A multiplexer passes `a` when `sel` is 0 and `b` when `sel` is 1. ✅
-
-3. **Confirm against the truth table** in simulation for all four combinations of `sel` and the chosen input. ✅
-
-</Steps>
-
-```verilog title="mux2.v"
-module mux2 (
-    input  wire a,
-    input  wire b,
-    input  wire sel,
-    output wire y
-);
-    assign y = sel ? b : a;
-endmodule
-```
-
-</details>
-
-## Summary
-
-<InArticleAd />
-
-
-| Concept | Key Takeaway |
-|---------|--------------|
-| Module | The reusable unit of hardware, with declared input and output ports |
-| `wire` versus `reg` | `wire` for continuous combinational drive, `reg` for values assigned in procedural blocks |
-| Combinational versus sequential | Combinational settles immediately, sequential updates on a clock edge |
-| Blocking versus non-blocking | `=` in combinational blocks, `<=` in clocked blocks |
-
-{/* CONTRIBUTOR: close with a short paragraph linking forward, then keep the Next Lesson tip below. */}
-
-:::tip[Next Lesson]
-In [Lesson 2: Simulation and Testbenches](/education/fpga-digital-design-verilog/simulation-and-testbenches), you will write a self-checking testbench for the adder you built here and learn to read its behaviour in a waveform viewer, so a design is proven correct before it ever reaches a board.
-:::
-
-<FpgaDigitalDesignVerilogComments />
-
-
-
-<InArticleAd />
-<TawkWidget />
-<Copyright />
-
-
-
-
-
-
-
-
-
-
-
-
-
-#  Verilog HDL Tutorial
-
----
-
-##  Table of Contents
-
-- [Installation Guide](#installation-guide)
-- [Introduction to HDLs](#introduction-to-hdls)
-- [Verilog HDL](#verilog-hdl)
-- [Fundamentals of Verilog](#fundamentals-of-verilog)
-- [Methods of Modeling](#methods-of-modeling)
-- [Hierarchical Module Representation](#hierarchical-module-representation)
-- [Testbench Formation](#testbench-formation)
-- [Designing a 4-Bit Counter](#designing-a-4-bit-counter)
-
----
-
-## Installation Guide for softwares used in RTL
-
-### Installing VS Code, Icarus Verilog and GTKWave on Linux (Fedora)
-
-```bash
-# Update system
-sudo dnf update
-
-# Install VS Code
-# Import the Microsoft GPG key
-sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-
-# Create the repository file
-sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
-
-# Install VS Code
-sudo dnf install code
-
-# Install Icarus Verilog
-sudo dnf install iverilog
-
-# Install GTKWave
-sudo dnf install gtkwave
-```
-
----
-
-## Introduction to Hardware Description Language (HDL)
-
-### What is an HDL?
-
-**Hardware Description Language (HDL)** is a specialized programming language used to describe the structure, design, and operation of digital and electronic systems.
-
-HDLs help us formalize and represent a digital system. 
-They are used for designing processors, motherboards, CPUs, and various other digital circuits.
-
-### Purpose of HDLs
-
-| **Purpose** | **Description** |
-| :--- | :--- |
-| **Circuit Design** | Provides a way to design digital circuits that meet specifications |
-| **Simulation** | Helps test and verify circuits before physical implementation |
-| **Synthesis** | Converts HDL code into gate-level netlists for fabrication |
-| **Timing Analysis** | Analyzes timing behavior to ensure timing requirements are met |
-
-### Types of HDLs
-
-There are several HDLs available:
-
-1. **VHDL** (Very High-speed Integrated Circuit HDL)
-2. **Verilog**
-3. **SystemVerilog**
-
-**In this course, we will focus on Verilog HDL.**
-
----
-
-## Verilog HDL
-**Verilog** is a hardware description language that is used to realize the digital circuits through code. 
-
-### History
-
-Verilog was developed by **Gateway Design Automation** as a proprietary language for logic simulation in **1984**.
-
-### Applications
-
-Verilog HDL is commonly used for:
-
-| **Application** | **Description** |
-| :--- | :--- |
-| **RTL Design** | Register Transfer Level design of digital circuits |
-| **Verification** | Writing testbenches to validate designs |
-| **FPGA Implementation** | Programming Field Programmable Gate Arrays |
-| **ASIC Design** | Designing Application-Specific Integrated Circuits |
-
-### Register Transfer Level (RTL)
-
-**Register Transfer Level (RTL)** is a low-level abstraction used in digital design to describe the behavior and functionality of a digital circuit or system.
-
----
-
-## Fundamentals of Verilog
-
-### Module Representation
-
-Everything in Verilog is built inside a **module**. A module contains input pins, output pins, and internal logic.
-
-![Verilog Module Structure](./Images/VerilogModule.png)
-
-*Figure: Verilog Module Structure*
-Gates, multiplexers, and priority circuits are all examples of hardware modules.
-
-#### Module Syntax
-
-```verilog
+```verilog title="General form"
 module <module_name> (<port_list>);
 
     // Port definitions
     // Description of the digital system
     statement 1;
     statement 2;
-    statement 3;
     ...
 
 endmodule
 ```
 
-#### Important Rules
+### Rules Worth Remembering
 
-| **Rule** | **Description** |
+| Rule | Description |
 | :--- | :--- |
-| **1** | Module name must be unique and not match any Verilog keywords |
-| **2** | Module must have input and output ports |
-| **3** | Port elements are defined within the module |
-| **4** | Module must be closed with `endmodule` |
-| **5** | Use `//` for comments |
+| 1 | The module name must be unique and must not clash with a Verilog keyword |
+| 2 | Ports are how the module connects to the outside world |
+| 3 | Port directions are declared inside the module |
+| 4 | Every module closes with `endmodule` |
+| 5 | Comments use `//` for one line, `/* */` for several |
 
-#### Example
+Ports can be declared in the header, as in `and_gate` above, or listed and then declared separately. Both are common, and you will meet both in real code:
 
-```verilog
+```verilog title="first_system.v, ports declared separately"
 module first_system (out1, out2, in1, in2);
 
     // Port definitions
     input  in1, in2;
     output out1, out2;
-    
+
     // Description of the digital system
     and gate_and (out1, in1, in2);
     or  gate_or  (out2, in1, in2);
@@ -340,35 +187,45 @@ module first_system (out1, out2, in1, in2);
 endmodule
 ```
 
----
+## Wires versus Registers
 
-## Methods of Modeling
+<InArticleAd />
 
-There are three different styles for describing module functionality in Verilog:
 
-1. **Structural Modeling**
-2. **Dataflow Modeling**
-3. **Behavioral Modeling**
+Verilog gives you two ways to hold a value, and the names are actively misleading. Learn them once, properly, and a whole class of confusion disappears.
 
----
+| Type | What it means | Where you assign it |
+|------|---------------|---------------------|
+| `wire` | A connection that is continuously driven by something else | `assign` statements, or a module's output port |
+| `reg` | A variable that keeps its value until something changes it | Inside `always` or `initial` blocks |
 
-### Structural Modeling
+The trap: **`reg` does not mean "this becomes a hardware register."** It is a simulation storage type, nothing more. A `reg` assigned inside `always @(*)` synthesises to plain combinational logic with no flip-flop anywhere. A `reg` assigned inside `always @(posedge clk)` does become a flip-flop. The clock decides, not the keyword.
 
-In structural modeling, each element to be used in the description statement should have been defined under Verilog as a structure. Since logic gates are extensively used in Verilog descriptions, they have been defined beforehand.
+The practical rule is simply mechanical:
 
-This description method is also called **gate-level modeling**.
+- Driving something with `assign`? Declare it `wire`.
+- Driving something inside an `always` block? Declare it `reg`.
 
-**Syntax:**
+Get it wrong and the compiler tells you immediately, so this is a cheap mistake rather than an expensive one.
 
-```verilog
-gate_keyword name (port_list)
+## Three Ways to Describe the Same Hardware
+
+<InArticleAd />
+
+
+Verilog offers three modelling styles. They are not three different circuits, they are three ways of writing down the same one, and mixing them inside a single module is normal practice.
+
+### Structural Modelling
+
+You name the gates and wire them together yourself. Verilog has gate primitives built in, so `and`, `or`, `xor` and `not` are keywords you can instantiate directly. This is also called gate-level modelling.
+
+```verilog title="Syntax"
+gate_keyword instance_name (output, input1, input2, ...);
 ```
 
-#### Example
+Note that the output comes first in the port list of a gate primitive.
 
-Building AND, OR, XOR, and NOT gates using Verilog:
-
-```verilog
+```verilog title="first_system.v, structural"
 module first_system (out1, out2, in1, in2);
 
     // Port Definitions
@@ -387,27 +244,17 @@ module first_system (out1, out2, in1, in2);
 endmodule
 ```
 
----
+This style is closest to a schematic, which makes it good for learning and tedious for anything large. Nobody builds a CPU this way.
 
-### Dataflow Modeling
+### Dataflow Modelling
 
-In this method, the relation between input and output ports is formed as a function.
+You write the output as a function of the inputs and let the tool choose the gates. The keyword is `assign`, and the operators are the ones you would expect: `&` for AND, `|` for OR, `~` for NOT, `^` for XOR.
 
-The main keyword in dataflow modeling is **`assign`**.
-
-**Syntax:**
-
-```verilog
+```verilog title="Syntax"
 assign output = function_of_inputs;
 ```
 
-Functions may be formed by logic gate representations. Operators used in dataflow modeling are: `&`, `|`, `~`, `^`
-
-#### Example
-
-Building AND, OR, XOR, and NOT gates using Verilog:
-
-```verilog
+```verilog title="first_system.v, dataflow"
 module first_system (out1, out2, in1, in2);
 
     // Port Definitions
@@ -426,7 +273,7 @@ module first_system (out1, out2, in1, in2);
 endmodule
 ```
 
-#### Truth Table
+Both versions above produce identical hardware. Here is what they compute:
 
 | `in1` | `in2` | `and_out` | `or_out` | `out1` (XOR) | `out2` (NOT) |
 | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -435,32 +282,22 @@ endmodule
 | 1 | 0 | 0 | 1 | 1 | 1 |
 | 1 | 1 | 1 | 1 | 0 | 0 |
 
----
+Dataflow is where most real combinational logic gets written. It is concise and it says what you mean.
 
-### Behavioral Modeling
+### Behavioural Modelling
 
-In this method, the digital system at hand is represented by its **behavior**. It describes a circuit's behavior or functionality using procedural blocks.
+You describe what the circuit does, inside a procedural block, and let the tool work out the structure. The keyword is `always`, followed by a sensitivity list saying what should retrigger it. More than one statement needs `begin` and `end`.
 
-In behavioral modeling, statements to be executed should be triggered by a signal to operate. The keyword **`always`** is used to indicate this triggering operation.
-
-If there is more than one statement to be executed, they should be encapsulated by `begin` and `end` keywords.
-
-**Syntax:**
-
-```verilog
-always @ (sensitivity_list)  // Triggering signal
+```verilog title="Syntax"
+always @ (sensitivity_list)
 begin
-    // behavioral description
     statement 1;
     statement 2;
-    statement 3;
     ...
 end
 ```
 
-#### Example
-
-```verilog
+```verilog title="first_system.v, behavioural"
 module first_system (out1, out2, in1, in2);
 
     // Port Definitions
@@ -469,12 +306,6 @@ module first_system (out1, out2, in1, in2);
 
     // Internal Signals
     reg out1, out2;
-
-    // Initialization
-    initial begin
-        out1 = 0;
-        out2 = 0;
-    end
 
     // Behavioral Modeling
     always @ (in1, in2) begin
@@ -485,204 +316,74 @@ module first_system (out1, out2, in1, in2);
 endmodule
 ```
 
----
+Notice `out1` and `out2` are now `reg`, because they are assigned inside an `always` block. The hardware is still pure combinational logic. No clock appears anywhere, so no flip-flop is created.
 
-## Hierarchical Module Representation
+Writing `always @ (in1, in2)` means "re-evaluate whenever `in1` or `in2` changes." Forgetting a signal from that list is a classic bug: simulation goes stale while the synthesised hardware does the right thing, so the two disagree. Modern practice avoids the whole problem by writing `always @(*)`, which asks the tool to work out the list for you:
 
-In larger projects, the number of modules may be more than one. In the example below, we represent our system as a combination of three modules such that AND and OR gates are described in different modules.
-![Hierarchical Module Structure](./Images/HierarchicalModule.png)
-*Figure: Hierarchical Module Structure*
-
-### AND Module
-
-```verilog
-module and_module (and_out, in1, in2);
-
-    // Port Definitions
-    input  in1, in2;
-    output and_out;
-
-    // Dataflow Modeling
-    assign and_out = in1 & in2;
-
-endmodule
+```verilog title="Prefer this for combinational blocks"
+always @(*) begin
+    out1 = (in1 & in2) ^ (in1 | in2);
+    out2 = ~in2;
+end
 ```
 
-### OR Module
+Use `always @(*)` for combinational logic from here on.
 
-```verilog
-module or_module (or_out, in1, in2);
+## Combinational Logic in Practice: a 4-Bit Adder
 
-    // Port Definitions
-    input  in1, in2;
-    output or_out;
+<InArticleAd />
 
-    // Dataflow Modeling
-    assign or_out = in1 | in2;
 
-endmodule
-```
+Time to build something with a carry chain. A full adder takes two bits and a carry in, and produces a sum bit and a carry out:
 
-### Top-Level Module
-
-```verilog
-module first_system (out1, out2, in1, in2);
-
-    // Port Definitions
-    input  in1, in2;
-    output out1, out2;
-
-    // Internal Signals
-    wire and_out, or_out;
-
-    // Structural Modeling
-    and_module U1 (and_out, in1, in2);
-    or_module  U2 (or_out,  in1, in2);
-
-    // Dataflow Modeling
-    assign out1 = and_out ^ or_out;
-    assign out2 = ~in2;
-
-endmodule
-```
-
----
-
-## Testbench Formation
-
-A **testbench** is a special Verilog module that is used to **test and verify** another module.
-
-### Structure of a Verilog Testbench
-
-1. Testbench module declaration
-2. Input/output port declaration
-3. Instantiation of the Unit Under Test (UUT)
-4. Providing input to the UUT
-5. Displaying the test results
-
----
-
-### First System Module
-
-```verilog
-module first_system (out1, out2, in1, in2);
-
-    // Port Definitions
-    input  in1, in2;
-    output out1, out2;
-
-    // Internal Signals
-    reg out1, out2;
-
-    // Initialization
-    initial begin
-        out1 = 0;
-        out2 = 0;
-    end
-
-    // Behavioral Modeling
-    always @ (in1, in2) begin
-        out1 = (in1 & in2) ^ (in1 | in2);
-        out2 = ~in2;
-    end
-
-endmodule
-```
-
----
-
-### Testbench File
-
-```verilog
-`timescale 1ns/1ps
-`include "first_system.v"
-
-module first_system_tb;
-
-// Inputs
-reg in1t, in2t;
-
-// Outputs
-wire out1t, out2t;
-
-// Instantiate the Unit Under Test (UUT)
-first_system UUT (
-    .out1(out1t), 
-    .out2(out2t),
-    .in1(in1t),
-    .in2(in2t)
+```verilog title="full_adder.v"
+module full_adder (
+    input  wire a,
+    input  wire b,
+    input  wire cin,
+    output wire sum,
+    output wire cout
 );
-
-reg [1:0] Testset [3:0];
-
-integer count;
-
-// Providing input to the UUT
-initial begin
-    // Create VCD file for waveform viewing
-    $dumpfile("first_system.vcd");
-    $dumpvars(0, first_system_tb);
-
-    // Initialize test vectors
-    Testset[0] = 2'b00;
-    Testset[1] = 2'b01;
-    Testset[2] = 2'b10;
-    Testset[3] = 2'b11;
-
-    #100;
-
-    count = 0;
-    repeat (4)
-    begin
-        #50 {in1t, in2t} = Testset[count];
-        #50 count = count + 1;
-    end
-
-    #50 $finish;
-end
-
-// Display the result on the console (Optional)
-initial begin
-    $display("================================");
-    $display("  in1  in2  |  out1  out2");
-    $display("================================");
-    $monitor("  %b    %b    |   %b     %b", in1t, in2t, out1t, out2t);
-end
-
+    assign sum  = a ^ b ^ cin;
+    assign cout = (a & b) | (cin & (a ^ b));
 endmodule
 ```
 
-### Simulation Results
+Chain four of them and the carry ripples from one stage to the next, exactly as it does when you add on paper:
 
-| `in1` | `in2` | `out1` | `out2` |
-| :---: | :---: | :---: | :---: |
-| 0 | 0 | 0 | 1 |
-| 0 | 1 | 1 | 0 |
-| 1 | 0 | 1 | 1 |
-| 1 | 1 | 0 | 0 |
+```verilog title="adder4.v"
+module adder4 (
+    input  wire [3:0] a,
+    input  wire [3:0] b,
+    input  wire       cin,
+    output wire [3:0] sum,
+    output wire       cout
+);
+    wire c1, c2, c3;
 
----
+    full_adder fa0 (.a(a[0]), .b(b[0]), .cin(cin), .sum(sum[0]), .cout(c1));
+    full_adder fa1 (.a(a[1]), .b(b[1]), .cin(c1),  .sum(sum[1]), .cout(c2));
+    full_adder fa2 (.a(a[2]), .b(b[2]), .cin(c2),  .sum(sum[2]), .cout(c3));
+    full_adder fa3 (.a(a[3]), .b(b[3]), .cin(c3),  .sum(sum[3]), .cout(cout));
+endmodule
+```
 
-## Designing a 4-Bit Counter
+Two things to notice. First, `[3:0]` declares a four-bit bus, and `a[0]` picks one bit out of it. Second, the instantiations use **named port connection** (`.a(a[0])`) rather than relying on position. Named connections are longer to type and save you from a whole category of silent wiring mistakes. Use them.
 
-A **4-bit counter** is a sequential circuit that counts from 0 to 15 (binary 0000 to 1111).
+You could also have written the entire adder as `assign {cout, sum} = a + b + cin;` and the tool would build you something better optimised. The point of doing it the long way once is that you now know what `+` actually costs: four gate delays stacked end to end, which is exactly why wide ripple-carry adders are slow.
 
-### Inputs
-- `clk` - Clock signal (triggers counting)
-- `reset` - Reset signal (sets count to 0)
+## Sequential Logic: `always @(posedge clk)`
 
-### Outputs
-- `count[3:0]` - 4-bit output (counts from 0 to 15)
+<InArticleAd />
 
----
 
-### Counter Module
+Everything so far settles on its own. Sequential logic is different: it remembers, and it changes only when the clock edge arrives. That is a flip-flop, and it is the other half of RTL.
 
-```verilog
+```verilog title="counter_4bit.v"
 module counter_4bit (
-    input wire clk,
-    input wire reset,
-    output reg [3:0] count
+    input  wire clk,
+    input  wire reset,
+    output reg  [3:0] count
 );
 
     always @(posedge clk or posedge reset) begin
@@ -695,83 +396,287 @@ module counter_4bit (
 endmodule
 ```
 
----
+Read the sensitivity list carefully. `posedge clk` means the block runs on the rising edge of the clock. Adding `or posedge reset` makes the reset **asynchronous**: it takes effect the moment it is asserted, without waiting for a clock edge.
 
-### Counter Testbench
+`count <= count + 1` is the line that makes this a counter. It says: whatever `count` is now, make it one greater at the next edge. Four flip-flops hold the value, and an adder sits between them computing the next one. That is the register transfer the name RTL refers to.
 
-```verilog
-`timescale 1ns/1ps
-`include "counter_4bit.v"
+`4'b0000` is a sized literal: four bits, binary, all zero. You will also see `4'd0` for decimal and `4'hF` for hex. Get in the habit of sizing your literals, because unsized ones default to 32 bits and cause quiet truncation warnings.
 
-module counter_4bit_tb;
+Note also that `count` overflows silently from `4'b1111` back to `4'b0000`. Four bits cannot hold sixteen, so it wraps. That is not a bug, it is arithmetic, but it is the kind of thing you have to decide about deliberately in hardware.
 
-    reg clk;
-    reg reset;
-    wire [3:0] count;
+## The Blocking versus Non-Blocking Rule
 
-    // Instantiate the counter
-    counter_4bit uut (
-        .clk(clk),
-        .reset(reset),
-        .count(count)
-    );
+<InArticleAd />
 
-    // Clock generation
-    initial begin
-        clk = 0;
-        forever #5 clk = ~clk;  // 10ns period (100MHz)
-    end
 
-    // Test sequence
-    initial begin
-        // Create VCD file for waveform viewing
-        $dumpfile("counter_4bit.vcd");
-        $dumpvars(0, counter_4bit_tb);
-        
-        // Initialize
-        reset = 1;
-        #20;
-        
-        // Release reset and let counter run
-        reset = 0;
-        #200;
-        
-        // Apply reset again
-        reset = 1;
-        #20;
-        reset = 0;
-        #100;
-        
-        // End simulation
-        $finish;
-    end
+This is the single most common beginner bug in Verilog, and it is worth learning as a rule before you understand the theory.
 
-    // Monitor output
-    initial begin
-        $monitor("Time=%0t reset=%b count=%d", $time, reset, count);
-    end
+**The rule:** use `=` in combinational `always` blocks, use `<=` in clocked `always` blocks.
+
+That is it. Follow it and you will avoid the problem entirely. Here is why it exists.
+
+`=` is **blocking**: statements take effect immediately and in order, like lines in a normal program. `<=` is **non-blocking**: the right-hand sides are all evaluated first, then every left-hand side updates together at the end of the time step.
+
+Consider a two-stage shift register, where `a` should move to `b` and `b` to `c` on each edge. Written correctly:
+
+```verilog title="Correct: non-blocking in a clocked block"
+always @(posedge clk) begin
+    b <= a;
+    c <= b;
+end
+```
+
+Both right-hand sides are sampled before anything updates, so `c` receives the **old** `b`. Two flip-flops, data marching along one stage per clock. Exactly what hardware does.
+
+Now the same thing with blocking assignments:
+
+```verilog title="Wrong: blocking in a clocked block"
+always @(posedge clk) begin
+    b = a;
+    c = b;
+end
+```
+
+The first line executes and `b` is already `a`. The second line then copies that new value into `c`. So `a` reaches `c` in a single clock, and your two-stage shift register has collapsed into one stage. The hardware the tool synthesises may not even match what the simulator showed you, which is the worst kind of bug: it disappears when you look for it in one place and reappears in the other.
+
+Keep to the rule and the question never comes up.
+
+## Building Bigger: Hierarchical Modules
+
+<InArticleAd />
+
+
+Real designs are modules inside modules. You saw this already with the adder, where `adder4` instantiated four copies of `full_adder`. The same idea applies at every scale, right up to the mini CPU you will build in Lesson 7.
+
+![Hierarchical Module Structure](./Images/HierarchicalModule.png)
+
+*Figure: a top-level module built from two smaller ones*
+
+Split the AND and OR into their own modules:
+
+```verilog title="and_module.v"
+module and_module (and_out, in1, in2);
+
+    // Port Definitions
+    input  in1, in2;
+    output and_out;
+
+    // Dataflow Modeling
+    assign and_out = in1 & in2;
 
 endmodule
 ```
 
+```verilog title="or_module.v"
+module or_module (or_out, in1, in2);
 
-![Counter output](./Images/CounterOutput.png)
+    // Port Definitions
+    input  in1, in2;
+    output or_out;
 
-*Figure: Counter Output*
----
-## 🚀 Simulation Commands for the 4-bit counter in iverilog and gtkwave
+    // Dataflow Modeling
+    assign or_out = in1 | in2;
 
-```bash
-# Compile
-iverilog -o counter_4bit_tb.vvp counter_4bit_tb.v
-
-# Run
-vvp counter_4bit_tb.vvp
-
-# View waveforms
-gtkwave counter_4bit_tb.vcd
+endmodule
 ```
 
----
+Then wire them together in a parent, mixing structural instantiation with dataflow for the rest:
+
+```verilog title="first_system.v, hierarchical"
+module first_system (out1, out2, in1, in2);
+
+    // Port Definitions
+    input  in1, in2;
+    output out1, out2;
+
+    // Internal Signals
+    wire and_out, or_out;
+
+    // Structural Modeling: instantiate the submodules
+    and_module U1 (and_out, in1, in2);
+    or_module  U2 (or_out,  in1, in2);
+
+    // Dataflow Modeling for the rest
+    assign out1 = and_out ^ or_out;
+    assign out2 = ~in2;
+
+endmodule
+```
+
+`U1` and `U2` are instance names. Each instance is a separate physical copy of the logic. Instantiating `and_module` twice gives you two AND gates, not one shared between callers. This is the deepest difference from software: there is no such thing as calling the same function twice to save space. If you want two, you pay for two.
+
+## Running Your First Simulation
+
+<InArticleAd />
 
 
+Icarus Verilog compiles your design, `vvp` runs it, and GTKWave shows you the result:
+
+```bash title="Compile, run, and view"
+# Compile the design and its testbench into a simulation binary
+iverilog -o counter_4bit_tb.vvp counter_4bit_tb.v
+
+# Run the simulation
+vvp counter_4bit_tb.vvp
+
+# Open the waveform it produced
+gtkwave counter_4bit.vcd
+```
+
+You need a testbench to give the design inputs, since a module on its own has nothing driving its ports. Writing good testbenches is a skill in itself, and it is the whole subject of Lesson 2. For now, take it on trust that the three commands above are the loop you will run hundreds of times.
+
+## Application Questions and Solutions
+
+<InArticleAd />
+
+
+### Question 1: Build a 2-to-1 multiplexer
+
+Write a Verilog module for a 2-to-1 multiplexer with inputs `a`, `b`, a select line `sel`, and output `y`, then describe how you would confirm it works.
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Declare the module and ports.** One output `y`, three inputs `a`, `b`, `sel`. ✅
+
+2. **Describe the logic.** A multiplexer passes `a` when `sel` is 0 and `b` when `sel` is 1. The conditional operator expresses this directly. ✅
+
+3. **Choose the right type.** `y` is driven by `assign`, so it is a `wire`. ✅
+
+4. **Confirm against the truth table** in simulation for all four combinations of `sel` and the chosen input. ✅
+
+</Steps>
+
+```verilog title="mux2.v"
+module mux2 (
+    input  wire a,
+    input  wire b,
+    input  wire sel,
+    output wire y
+);
+    assign y = sel ? b : a;
+endmodule
+```
+
+</details>
+
+### Question 2: Why does this counter never count?
+
+A student writes the following and reports that `count` stays at zero in simulation. The reset is only asserted at the start. What is wrong, and what is the fix?
+
+```verilog title="broken_counter.v"
+module broken_counter (
+    input  wire clk,
+    input  wire reset,
+    output reg  [3:0] count
+);
+    always @(posedge clk) begin
+        if (reset)
+            count = 4'b0000;
+        count = count + 1;
+        count = 4'b0000;
+    end
+endmodule
+```
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Trace the block in order.** Blocking assignments execute top to bottom within one clock edge, so the last line always wins. ✅
+
+2. **Identify the effect.** `count` is incremented and then immediately overwritten with zero before the edge finishes, so the increment is never observable. ✅
+
+3. **Recognise the deeper problem.** Assigning the same signal several times in one clocked block is a design smell. A flip-flop has one next-state value, so the code should compute one. ✅
+
+4. **Fix it** by deciding the next value once, in an `if` / `else`, and using non-blocking assignment because this is a clocked block. ✅
+
+</Steps>
+
+```verilog title="fixed_counter.v"
+module fixed_counter (
+    input  wire clk,
+    input  wire reset,
+    output reg  [3:0] count
+);
+    always @(posedge clk) begin
+        if (reset)
+            count <= 4'b0000;
+        else
+            count <= count + 1;
+    end
+endmodule
+```
+
+Note this version has a **synchronous** reset, because `reset` is not in the sensitivity list and is only examined on a clock edge. That is usually the better choice on an FPGA, and Lesson 4 explains why.
+
+</details>
+
+### Question 3: How many flip-flops does this create?
+
+```verilog title="how_many.v"
+module how_many (
+    input  wire clk,
+    input  wire [3:0] a,
+    input  wire [3:0] b,
+    output reg  [3:0] x,
+    output reg  [3:0] y
+);
+    always @(*) begin
+        x = a & b;
+    end
+
+    always @(posedge clk) begin
+        y <= a | b;
+    end
+endmodule
+```
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Look at the first block.** It is sensitive to `*`, not to a clock edge, so `x` is combinational despite being declared `reg`. Four AND gates, no storage. ✅
+
+2. **Look at the second block.** It triggers on `posedge clk`, so `y` is registered. Four OR gates feeding four flip-flops. ✅
+
+3. **Count.** Four flip-flops in total, all from the second block. ✅
+
+</Steps>
+
+The answer is four. This is the `reg` trap from earlier: the keyword tells you nothing about whether storage is created. Only the sensitivity list does.
+
+</details>
+
+## Summary
+
+<InArticleAd />
+
+
+| Concept | Key Takeaway |
+|---------|--------------|
+| Module | The reusable unit of hardware, with declared input and output ports |
+| `wire` versus `reg` | `wire` for continuous drive, `reg` for values assigned in procedural blocks. `reg` does not imply a flip-flop |
+| Modelling styles | Structural names the gates, dataflow writes a function, behavioural describes intent. All three synthesise |
+| Combinational versus sequential | Combinational settles on its own, sequential updates on a clock edge |
+| Blocking versus non-blocking | `=` in combinational blocks, `<=` in clocked blocks. This one rule prevents the most common Verilog bug |
+| Hierarchy | Each instance is a separate physical copy. Two instances means twice the gates |
+| RTL | Logic between registers, plus what moves on each edge. The level you design at |
+
+You can now describe hardware and you know what your description becomes. What you cannot yet do is prove it correct, and on hardware that matters far more than it does in software, because the feedback loop is so much slower. That is next.
+
+:::tip[Next Lesson]
+In [Lesson 2: Simulation and Testbenches](/education/fpga-digital-design-verilog/simulation-and-testbenches), you will wrap the adder and counter from this lesson in self-checking testbenches, learn to read a waveform in GTKWave, and find a deliberately planted bug from its trace alone.
+:::
+
+<FpgaDigitalDesignVerilogComments />
+
+
+
+<InArticleAd />
+<TawkWidget />
+<Copyright />

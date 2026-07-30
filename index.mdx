@@ -1,6 +1,6 @@
 ---
 title: "FPGA and Digital Design with Verilog"
-description: "Design real digital hardware in Verilog and run it on an FPGA. Nine lessons covering Verilog fundamentals, simulation and testbenches, state machines, FPGA toolchains, building MCU-style peripherals, memory and clock-domain crossing, a mini CPU, FPGA plus MCU co-design, and a capstone push from RTL to an ASIC with Sky130 and OpenLane."
+description: "Design real digital hardware in Verilog and run it on an FPGA. Nine lessons covering Verilog fundamentals, simulation and testbenches, state machines, FPGA toolchains, building MCU-style peripherals, memory and clock-domain crossing, a mini CPU, FPGA plus MCU co-design, and a capstone push from RTL to an ASIC with Sky130 and LibreLane."
 pubDate: 2026-06-19
 tags: ["fpga", "verilog", "digital-design", "rtl", "hdl", "state-machines", "testbench", "ice40", "yosys", "asic", "openlane", "sky130"]
 excerpt: "You already use UARTs, timers, PWM, and CPUs inside microcontrollers. This course teaches you to build them. Describe digital hardware in Verilog, verify it in simulation, run it on a real FPGA, and finish by taking a design through the open-source ASIC flow to GDSII."
@@ -13,7 +13,7 @@ import { Card, CardGrid, Badge, Steps } from '@astrojs/starlight/components';
 
 You already use UARTs, timers, PWM channels, and CPU cores every time you program a microcontroller. This course teaches you to build them. You will describe digital hardware in Verilog, prove it works in simulation, run it on a real FPGA, and finish by pushing a design through the open-source ASIC flow to a manufacturable layout. #fpga #verilog #digitaldesign
 
-{/* CONTRIBUTOR NOTE: This is the course overview page. Keep the structure below (What You Will Learn, Lessons, Prerequisites, Tools and Hardware, Where This Connects). Fill each lesson card as lessons are completed. Follow the format in /education/digital-electronics/ and /education/planar-mechanics/. No em dashes, minimal emojis, no `$` for currency (write "30 USD"). */}
+{/* All nine lessons are written. Keep the structure below (What You Will Learn, Lessons, Prerequisites, Tools and Hardware, Where This Connects). */}
 
 ## What You Will Learn
 
@@ -54,7 +54,7 @@ You already use UARTs, timers, PWM channels, and CPU cores every time you progra
   </Card>
 
   <Card title="Lesson 4: First Design on a Real FPGA" icon="document">
-    [Open lesson](./first-fpga-design-ice40). FPGA architecture (LUTs, flip-flops, block RAM), the open toolchain, pin constraints, and timing.
+    [Open lesson](./first-fpga-design). FPGA architecture (LUTs, flip-flops, block RAM), the open toolchain, pin constraints, and timing.
     **Practical:** blink and a debounced counter on an iCE40 board.
   </Card>
 
@@ -79,7 +79,7 @@ You already use UARTs, timers, PWM channels, and CPU cores every time you progra
   </Card>
 
   <Card title="Lesson 9: From FPGA to ASIC" icon="document">
-    [Open lesson](./fpga-to-asic-sky130-openlane). The ASIC flow from RTL through synthesis, floorplan, place and route, to GDSII, using the Sky130 PDK and OpenLane.
+    [Open lesson](./fpga-to-asic-sky130-openlane). The ASIC flow from RTL through synthesis, floorplan, place and route, to GDSII, using the Sky130 PDK and LibreLane.
     **Practical:** take an earlier Verilog block all the way to a manufacturable layout.
   </Card>
 </CardGrid>
@@ -102,11 +102,11 @@ This course assumes you understand digital logic at the level of the [Digital El
   </Card>
 
   <Card title="A low-cost FPGA board" icon="laptop">
-    An iCE40-based board such as the iCEBreaker or TinyFPGA BX (roughly 30 to 70 USD) is used from Lesson 4 onward. {/* CONTRIBUTOR: confirm the exact recommended board and price, and add a Parts Kit table here in the digital-electronics style if a kit is defined. */}
+    A Tang Nano 9K (roughly 15 to 20 USD) is the recommended board from Lesson 4 onward, with iCE40 boards such as the iCEBreaker or iCEstick as a documented alternative. Lessons 1 to 3 need no hardware at all.
   </Card>
 
   <Card title="Open ASIC toolchain" icon="setting">
-    The Sky130 open process design kit and OpenLane, used in the final lesson to turn RTL into a GDSII layout.
+    The Sky130 open process design kit and LibreLane, used in the final lesson to turn RTL into a GDSII layout.
   </Card>
 </CardGrid>
 

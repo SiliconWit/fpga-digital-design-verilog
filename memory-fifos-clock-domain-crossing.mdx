@@ -1,10 +1,10 @@
 ---
-title: "Memory, FIFOs, and Clock-Domain Crossing"
-description: "Store and move data safely inside an FPGA. Inferring block RAM, building a FIFO, metastability, synchronisers, and crossing clock domains. Build a dual-clock FIFO that passes data between two clock domains."
+title: "Memory, FIFOs, and Clock Domain Crossing"
+description: "Store and buffer data inside an FPGA, and move it safely between unrelated clocks. Inferring block RAM, building a synchronous FIFO, why metastability makes one flip-flop insufficient, the two-flop synchroniser, and a Gray-coded dual-clock FIFO verified across two unrelated clocks."
 contributors: "ian-kigen,sam-macharia"
 pubDate: 2026-06-19
-tags: ["verilog", "fpga", "block-ram", "fifo", "clock-domain-crossing", "metastability", "synchronizer"]
-excerpt: "Real systems buffer data and run different parts at different clock rates. This lesson covers inferring block RAM, building a FIFO, and the one topic that catches almost every new FPGA engineer: moving a signal from one clock domain to another without corrupting it."
+tags: ["verilog", "fpga", "block-ram", "fifo", "clock-domain-crossing", "cdc", "metastability", "gray-code"]
+excerpt: "Two clocks that are not related to each other will eventually corrupt any signal you pass naively between them, and the failure is intermittent, which makes it the hardest class of bug in digital design. This lesson covers memory inference, FIFOs, and the discipline that makes crossing clock domains safe."
 heroImage: "https://cdn.siliconwit.com/education/fpga-digital-design-verilog/memory-fifos-clock-domain-crossing.png"
 ---
 
@@ -21,66 +21,163 @@ import { Card, CardGrid, Badge, Steps, LinkButton, FileTree } from '@astrojs/sta
   contributors={frontmatter.contributors}
 />
 
-
-
 import FpgaDigitalDesignVerilogComments from '../../../../components/fpga-digital-design-verilog/FpgaDigitalDesignVerilogComments.astro';
 
-A peripheral produces data faster than the rest of your design can consume it, or two parts of a system run on different clocks. Both situations need storage and careful handoff. Getting this wrong produces bugs that appear once an hour and vanish when you probe them. This lesson teaches the techniques that make data movement reliable. #verilog #fpga #cdc
-
-{/* CONTRIBUTOR NOTE
-   Goal: the reader can infer RAM, build a FIFO, and cross clock domains safely. This is the lesson
-   that prevents the worst intermittent FPGA bugs. Keep all headings. Rules: no em dashes; titled code;
-   code out of <Steps>; no `$` for currency.
-*/}
+Every design so far has run on one clock, where everything is predictable. Real systems are not like that. An ADC has its own oscillator, a camera sends pixels on its own clock, a UART arrives at whatever rate the other end chose. The moment two unrelated clocks meet, a whole class of intermittent, unreproducible bug becomes available to you, and this lesson is about not writing it. #verilog #fpga #cdc
 
 ## Learning Objectives
 
 By the end of this lesson, you will be able to:
 
-1. **Infer** block RAM from Verilog rather than building it from flip-flops.
-2. **Build** a synchronous FIFO with full and empty flags.
-3. **Explain** metastability and why a single flip-flop is not enough across clock domains.
-4. **Design** a two-flip-flop synchroniser and a safe clock-domain-crossing FIFO.
+1. **Write** Verilog that infers block RAM rather than a pile of flip-flops.
+2. **Build** a synchronous FIFO with correct full and empty behaviour.
+3. **Explain** metastability and why one flip-flop is not enough.
+4. **Apply** the two-flop synchroniser, and say exactly when it is not sufficient.
+5. **Build** a dual-clock FIFO with Gray-coded pointers, and verify it across unrelated clocks.
 
 ## What We Are Building
 
 <InArticleAd />
 
-
-<Card title="A dual-clock FIFO" icon="star">
-  You will build a FIFO that accepts data on one clock and delivers it on another, the standard safe bridge between two clock domains, and test it with mismatched clocks in simulation.
+<Card title="Two FIFOs and a synchroniser" icon="star">
+  A synchronous FIFO first, to get the pointer and flag logic right on one clock. Then the two-flop synchroniser for single-bit signals. Then the real thing: a dual-clock FIFO with Gray-coded pointers, tested with a 100 MHz writer feeding a 27 MHz reader.
 </Card>
 
 ## Inferring Block RAM
 
 <InArticleAd />
 
+Lesson 4 mentioned that FPGAs contain dedicated block RAM. You do not instantiate it explicitly. You write Verilog that looks like a memory, and the synthesis tool recognises the pattern and maps it.
 
-{/* CONTRIBUTOR: show the coding pattern the synthesiser recognises as block RAM, and contrast with
-   accidentally building RAM out of flip-flops (wasteful). */}
+```verilog title="simple_ram.v"
+module simple_ram #(
+    parameter integer WIDTH = 8,
+    parameter integer DEPTH = 256,
+    parameter integer AW    = 8
+) (
+    input  wire             clk,
+    input  wire             we,
+    input  wire [AW-1:0]    addr,
+    input  wire [WIDTH-1:0] din,
+    output reg  [WIDTH-1:0] dout
+);
+    reg [WIDTH-1:0] mem [0:DEPTH-1];
+
+    always @(posedge clk) begin
+        if (we) mem[addr] <= din;
+        dout <= mem[addr];          // registered read: this is what makes it block RAM
+    end
+endmodule
+```
+
+The pattern that matters is `dout <= mem[addr]` inside a clocked block. A **registered read** is what block RAM offers, so writing it that way lets the tool use one. Write it as `assign dout = mem[addr]` instead and you have asked for a combinational read, which block RAM cannot do, so the tool builds the whole array out of LUTs and flip-flops. On a small FPGA that will exhaust the fabric in a hurry.
+
+The practical consequences:
+
+- **Read data arrives one cycle after the address.** Every design using block RAM has that latency in it, so plan for it rather than discovering it.
+- **Check the synthesis log.** Yosys reports how many RAM blocks it inferred. If you expected one and see zero, your read was combinational or your array was indexed in a way the tool could not recognise.
+- **Do not initialise it in an `initial` block** unless your device supports it. Some do, some do not, and the code silently means different things.
 
 ## Building a Synchronous FIFO
 
 <InArticleAd />
 
+A FIFO is memory plus two pointers and two flags. On a single clock it is straightforward, and getting it right here is worth doing before adding the complication of a second clock.
 
-{/* CONTRIBUTOR: read and write pointers, full and empty detection, and depth. Single-clock first. */}
+```verilog title="sync_fifo.v"
+module sync_fifo #(
+    parameter integer WIDTH = 8,
+    parameter integer DEPTH = 8,
+    parameter integer AW    = 3            // log2(DEPTH)
+) (
+    input  wire             clk,
+    input  wire             rst,
+    input  wire             wr_en,
+    input  wire [WIDTH-1:0] wr_data,
+    input  wire             rd_en,
+    output reg  [WIDTH-1:0] rd_data,
+    output wire             full,
+    output wire             empty,
+    output reg  [AW:0]      count
+);
+    reg [WIDTH-1:0] mem [0:DEPTH-1];
+    reg [AW-1:0]    wr_ptr, rd_ptr;
+
+    assign full  = (count == DEPTH);
+    assign empty = (count == 0);
+
+    always @(posedge clk) begin
+        if (rst) begin
+            wr_ptr <= 0; rd_ptr <= 0; count <= 0; rd_data <= 0;
+        end else begin
+            if (wr_en && !full) begin
+                mem[wr_ptr] <= wr_data;
+                wr_ptr      <= wr_ptr + 1'b1;
+            end
+            if (rd_en && !empty) begin
+                rd_data <= mem[rd_ptr];
+                rd_ptr  <= rd_ptr + 1'b1;
+            end
+            // count changes only when exactly one of the two actually happens
+            if ((wr_en && !full) && !(rd_en && !empty))      count <= count + 1'b1;
+            else if ((rd_en && !empty) && !(wr_en && !full)) count <= count - 1'b1;
+        end
+    end
+endmodule
+```
+
+Three decisions in there worth noticing:
+
+- **A separate `count` register** makes full and empty trivial. The alternative, comparing pointers, needs an extra bit to distinguish "pointers equal because empty" from "pointers equal because full", which is the trick the dual-clock version will have to use.
+- **Writes are gated on `!full` and reads on `!empty`.** Without those guards a caller who ignores the flags silently corrupts the buffer. Enforce it inside.
+- **Simultaneous read and write leave `count` unchanged**, which is correct and easy to get wrong.
+
+Verified on five separate properties:
+
+```text title="Simulation output"
+empty after reset ............... PASS
+full after 8 writes ............ PASS (count=8)
+overflow write ignored ......... PASS (count=8)
+first-in-first-out order ....... PASS
+empty after draining ........... PASS (count=0)
+```
+
+The overflow test matters more than it looks. A FIFO that silently accepts a write when full is worse than one that blocks, because the corruption appears later and somewhere else.
 
 ## Metastability: Why One Flip-Flop Is Not Enough
 
 <InArticleAd />
 
+Here is the physical fact underneath everything in the rest of this lesson.
 
-{/* CONTRIBUTOR: explain what happens when a signal changes near a clock edge, and why a captured value
-   can be neither 0 nor 1 for a moment. Keep it intuitive but correct. */}
+A flip-flop captures its input on a clock edge, but only reliably if the input has been stable for a short period before the edge (**setup time**) and stays stable briefly after it (**hold time**). Those windows are a few hundred picoseconds on a modern FPGA.
+
+If an input changes *inside* that window, the flip-flop does not cleanly capture a 0 or a 1. It enters a **metastable** state, sitting at an intermediate voltage, and it resolves to one value or the other after an unpredictable delay.
+
+```text title="What metastability looks like"
+              setup |  | hold
+                    v  v
+clk    ______________|‾‾‾|________________
+
+input  ‾‾‾‾‾‾‾‾‾‾‾‾‾‾\____________________     changes inside the window
+
+output ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾~~~~~~~~\_______        undecided, then resolves
+                        ^^^^^^^
+                        metastable, duration unpredictable
+```
+
+Two things make this the nastiest class of bug in digital design:
+
+- **It is a probability, not a certainty.** With unrelated clocks, the chance that a given edge lands in the window is small, so a design can run for hours and then fail. The industry metric is literally mean time between failures.
+- **Simulation will not show it.** A standard simulator has no notion of setup windows. It captures either the old value or the new one, cleanly. **Your CDC bug will pass every simulation you write and then fail on hardware**, which is why this must be handled by discipline rather than by testing.
+
+You cannot prevent metastability. Asynchronous inputs exist. What you can do is give it time to resolve before anything acts on it.
 
 ## The Two-Flip-Flop Synchroniser
 
 <InArticleAd />
 
-
-{/* CONTRIBUTOR: the standard fix for a single-bit signal crossing domains. Stress it works for one bit,
-   not for buses. */}
+The standard fix for a single-bit signal crossing domains:
 
 ```verilog title="synchronizer.v"
 module synchronizer (
@@ -97,13 +194,153 @@ module synchronizer (
 endmodule
 ```
 
+The first flip-flop may go metastable. It then has a full clock period to settle before the second one samples it. The probability that it is still undecided a whole period later is vanishingly small, and the second flip-flop's output is therefore clean. The cost is one cycle of latency and, at reset, one cycle of an undefined value.
+
+You have already used this twice without it being named: on the button in Lesson 4 and on the `rx` line in Lesson 5.
+
+**Now the critical limitation.** A two-flop synchroniser is safe for **one bit and one bit only**.
+
+Put one on each bit of a multi-bit bus and you have built something worse than nothing. Each bit resolves independently, so when the bus changes from `0111` to `1000`, individual bits can land on different sides of the edge, and the receiving domain can capture `1111` or `0000`, values the counter never held. This is the single most common CDC mistake, and it is the subject of Question 1 below.
+
+For a bus you need either a FIFO, or Gray coding so that only one bit ever changes at a time.
+
 ## Crossing a Bus: The Dual-Clock FIFO
 
 <InArticleAd />
 
+This is the workhorse. Data goes into memory in the write domain and comes out in the read domain, and the only things that cross are the two pointers, Gray coded so each is safe to synchronise.
 
-{/* CONTRIBUTOR: explain why multi-bit values need a FIFO or Gray-coded pointers rather than per-bit
-   synchronisers. Build the dual-clock FIFO here. */}
+### Why Gray code
+
+In Gray code, consecutive values differ in exactly one bit:
+
+| Binary | Gray |
+|:---:|:---:|
+| 000 | 000 |
+| 001 | 001 |
+| 010 | 011 |
+| 011 | 010 |
+| 100 | 110 |
+| 101 | 111 |
+| 110 | 101 |
+| 111 | 100 |
+
+That single-bit property is the whole point. When a Gray-coded pointer increments, only one bit changes, so synchronising it can only ever give you the old value or the new one. Never a mixture, because there is no mixture to have. Converting is one line:
+
+```verilog title="Binary to Gray"
+function [AW:0] bin2gray(input [AW:0] b);
+    bin2gray = b ^ (b >> 1);
+endfunction
+```
+
+### The FIFO
+
+```verilog title="async_fifo.v"
+module async_fifo #(
+    parameter integer WIDTH = 8,
+    parameter integer AW    = 3                 // depth = 2**AW
+) (
+    // write domain
+    input  wire             wclk,
+    input  wire             wrst,
+    input  wire             wr_en,
+    input  wire [WIDTH-1:0] wr_data,
+    output reg              full,
+    // read domain
+    input  wire             rclk,
+    input  wire             rrst,
+    input  wire             rd_en,
+    output wire [WIDTH-1:0] rd_data,
+    output reg              empty
+);
+    localparam integer DEPTH = 1 << AW;
+
+    reg [WIDTH-1:0] mem [0:DEPTH-1];
+
+    // Pointers carry one extra bit so full and empty stay distinguishable
+    reg [AW:0] wbin, wgray, rbin, rgray;
+    reg [AW:0] wgray_r1, wgray_r2;              // wgray synchronised into the read domain
+    reg [AW:0] rgray_w1, rgray_w2;              // rgray synchronised into the write domain
+
+    function [AW:0] bin2gray(input [AW:0] b);
+        bin2gray = b ^ (b >> 1);
+    endfunction
+
+    // ---------------- write domain ----------------
+    // full is REGISTERED. Deriving it combinationally would create a loop,
+    // because wbin_next depends on full.
+    wire [AW:0] wbin_next  = wbin + (wr_en && !full);
+    wire [AW:0] wgray_next = bin2gray(wbin_next);
+    wire        full_next  = (wgray_next == {~rgray_w2[AW:AW-1], rgray_w2[AW-2:0]});
+
+    always @(posedge wclk) begin
+        if (wrst) begin
+            wbin <= 0; wgray <= 0; full <= 1'b0;
+        end else begin
+            if (wr_en && !full) mem[wbin[AW-1:0]] <= wr_data;
+            wbin  <= wbin_next;
+            wgray <= wgray_next;
+            full  <= full_next;
+        end
+    end
+
+    // ---------------- read domain ----------------
+    wire [AW:0] rbin_next  = rbin + (rd_en && !empty);
+    wire [AW:0] rgray_next = bin2gray(rbin_next);
+    wire        empty_next = (rgray_next == wgray_r2);
+
+    always @(posedge rclk) begin
+        if (rrst) begin
+            rbin <= 0; rgray <= 0; empty <= 1'b1;
+        end else begin
+            rbin  <= rbin_next;
+            rgray <= rgray_next;
+            empty <= empty_next;
+        end
+    end
+
+    assign rd_data = mem[rbin[AW-1:0]];
+
+    // ---------------- the two-flop synchronisers ----------------
+    always @(posedge rclk) begin
+        if (rrst) begin wgray_r1 <= 0; wgray_r2 <= 0; end
+        else      begin wgray_r1 <= wgray; wgray_r2 <= wgray_r1; end
+    end
+
+    always @(posedge wclk) begin
+        if (wrst) begin rgray_w1 <= 0; rgray_w2 <= 0; end
+        else      begin rgray_w1 <= rgray; rgray_w2 <= rgray_w1; end
+    end
+endmodule
+```
+
+Read it in three passes.
+
+**The pointers have an extra bit.** A depth-8 FIFO uses 4-bit pointers. When the low three bits match but the top bit differs, the writer has lapped the reader, which means full. When all four match, empty. Without that bit the two conditions are indistinguishable.
+
+**Only Gray-coded pointers cross.** `wgray` goes through two flip-flops into the read domain, `rgray` likewise into the write domain. The data itself never crosses; it sits in memory, written by one clock and read by the other at a different address.
+
+**The flags are conservative by construction.** Each domain sees a synchronised pointer that is one or two cycles stale, so `full` may assert slightly early and `empty` may clear slightly late. Both errors are in the safe direction. The dangerous direction, thinking there is space when there is not, cannot happen.
+
+The full comparison, `wgray_next == {~rgray_w2[AW:AW-1], rgray_w2[AW-2:0]}`, is checking whether the next write pointer equals the read pointer with the top two bits inverted, which is the Gray-code equivalent of "one lap ahead".
+
+### Verified across unrelated clocks
+
+The test that matters uses two clocks with no integer relationship, so the phase between them drifts continuously:
+
+```verilog title="Excerpt from the testbench"
+always #5    wclk = ~wclk;      // 100 MHz writer
+always #18.5 rclk = ~rclk;      // about 27 MHz reader, deliberately unrelated
+```
+
+```text title="Simulation output"
+wrote 40 bytes at 100 MHz, read 40 at 27 MHz
+every byte in order, none lost or duplicated ... PASS
+```
+
+Forty bytes through a depth-8 FIFO means the writer filled it and blocked repeatedly while the reader drained, so both flags were exercised under back-pressure rather than in a quiet run.
+
+Remember, though, what simulation can and cannot tell you here. It confirms the **protocol** is right: pointers, flags, ordering, no loss. It says nothing about metastability, which it does not model. That part rests on the two-flop synchronisers being present and the pointers being Gray coded.
 
 :::tip[Instrument it]
 Clock-domain bugs are intermittent, so reproduce them on purpose before trusting a fix. In simulation, drive the two domains with clocks at awkward, non-integer ratios and run long. On hardware, expose the FIFO full and overflow flags on spare pins and watch them on a logic analyser under load. If the design ships in the field, those same counters (overflow events, dropped samples) are exactly the kind of health metric an [edge node can publish](https://siliconwit.io) so a rare fault is caught in the log rather than in person.
@@ -112,7 +349,6 @@ Clock-domain bugs are intermittent, so reproduce them on purpose before trusting
 ## Application Questions and Solutions
 
 <InArticleAd />
-
 
 ### Question 1: The bug that only appears in hardware
 
@@ -125,9 +361,63 @@ A data path passes a multi-bit counter value from a fast clock to a slow one usi
 
 1. **Spot the misuse.** A two-flip-flop synchroniser is safe for a single bit only. Across a multi-bit bus, individual bits can settle on different clock edges. ✅
 
-2. **Understand the result.** During a transition the captured word can mix old and new bits, giving a value that never actually existed. ✅
+2. **Understand the result.** During a transition the captured word can mix old and new bits, giving a value that never actually existed. A counter going from `0111` to `1000` can be read as `1111` or `0000`. ✅
 
-3. **Use the right structure.** Pass the data through a FIFO, or convert the pointer to Gray code so only one bit changes at a time. ✅
+3. **See why "wildly wrong" is the giveaway.** An off-by-one would suggest a latency mistake. A value far from both the old and the new one means bits were mixed, which points straight at per-bit synchronisation. ✅
+
+4. **Use the right structure.** Pass the data through a FIFO, or convert the pointer to Gray code so only one bit changes at a time. ✅
+
+</Steps>
+
+</details>
+
+### Question 2: The simulator hangs instead of failing
+
+While writing the dual-clock FIFO, a developer derives the full flag combinationally:
+
+```verilog title="The version that hangs"
+wire [AW:0] wbin_next  = wbin + (wr_en && !full);
+wire [AW:0] wgray_next = bin2gray(wbin_next);
+assign      full       = (wgray_next == {~rgray_w2[AW:AW-1], rgray_w2[AW-2:0]});
+```
+
+The simulation produces no output at all and has to be killed. What is wrong, and why does it hang rather than report an error?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Trace the dependencies.** `full` depends on `wgray_next`, which depends on `wbin_next`, which depends on `full`. That is a combinational loop with no register to break it. ✅
+
+2. **Understand the hang.** Each change to `full` forces a re-evaluation that changes `full` again, at the same simulation time. The simulator never advances, so it produces no output and never terminates. It is not an error it can detect, it is a circuit that has no settled state. ✅
+
+3. **Recognise the hardware equivalent.** In real silicon this is a ring oscillator: a loop of gates feeding itself, oscillating at whatever frequency the propagation delay allows. Synthesis will usually warn, and the result is unusable. ✅
+
+4. **Fix it by registering the flag.** Compute `full_next` combinationally, then assign it to a registered `full` on the clock edge. The loop is broken because `wbin_next` now depends on the previous cycle's value. ✅
+
+</Steps>
+
+The general lesson: if a simulation hangs with no output rather than failing a check, suspect a combinational loop before you suspect the testbench.
+
+</details>
+
+### Question 3: When is a FIFO the wrong answer?
+
+A single-bit `enable` from a slow control domain needs to reach a fast datapath domain. A colleague proposes a dual-clock FIFO. Is that right?
+
+<details>
+<summary>**Click to reveal the solution**</summary>
+
+<Steps>
+
+1. **Match the tool to the problem.** A FIFO exists to move multi-bit data while preserving order and absorbing rate mismatch. A single-bit level needs none of that. ✅
+
+2. **Use a two-flop synchroniser instead.** One bit, no ordering requirement, no buffering. Two flip-flops and one cycle of latency. ✅
+
+3. **Note the one real trap.** If the signal is a **pulse** rather than a level, and the source clock is faster than the destination, the pulse can be too short to be sampled at all. That needs a pulse stretcher or a toggle-and-synchronise handshake, not a FIFO. ✅
+
+4. **Answer.** No. A FIFO here is a large amount of block RAM and logic to solve a problem two flip-flops solve, and it adds latency for nothing. ✅
 
 </Steps>
 
@@ -137,22 +427,28 @@ A data path passes a multi-bit counter value from a fast clock to a slow one usi
 
 <InArticleAd />
 
-
 | Concept | Key Takeaway |
 |---------|--------------|
-| Block RAM | Use the inference pattern, do not build large memory from flip-flops |
-| FIFO | Pointers plus full and empty flags buffer between producer and consumer |
-| Metastability | A signal captured near an edge can be momentarily undefined |
-| Synchroniser | Two flip-flops fix a single bit, never a bus |
-| CDC for buses | Use a FIFO or Gray-coded pointers |
+| Block RAM inference | Use a registered read, `dout <= mem[addr]`, inside a clocked block |
+| Read latency | Block RAM data arrives one cycle after the address. Design around it |
+| Synchronous FIFO | Memory plus two pointers plus flags. Gate writes on full and reads on empty |
+| Metastability | An input changing in the setup window leaves a flip-flop briefly undecided |
+| Simulation blind spot | Simulators do not model metastability. CDC correctness comes from discipline, not testing |
+| Two-flop synchroniser | The standard fix, for exactly one bit |
+| Per-bit synchronisers on a bus | The most common CDC bug. Produces values that never existed |
+| Gray code | Consecutive values differ in one bit, so a synchronised pointer is old or new, never mixed |
+| Dual-clock FIFO | Only Gray-coded pointers cross. Data stays in memory |
+| Extra pointer bit | Needed so full and empty are distinguishable when pointers match |
+| Conservative flags | Stale synchronised pointers make full early and empty late. Both are safe |
+| Combinational loops | A simulation that hangs with no output usually means one. Register the flag |
+
+You can now store data, buffer it, and move it between clocks without corrupting it. That is the last building block you need before assembling them into something that executes a program.
 
 :::tip[Next Lesson]
-In [Lesson 7: Building a Mini CPU](/education/fpga-digital-design-verilog/building-a-mini-cpu), you bring the whole course together: memory, registers, and state machines combine into a small processor that fetches and executes instructions.
+In [Lesson 7: Building a Mini CPU](/education/fpga-digital-design-verilog/building-a-mini-cpu), you will design a tiny instruction set and build the datapath and control FSM that executes it, using the register file, ALU, and memory patterns from this lesson and the last.
 :::
 
 <FpgaDigitalDesignVerilogComments />
-
-
 
 <InArticleAd />
 <TawkWidget />

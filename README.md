@@ -14,7 +14,7 @@ sidebar:
 
 **Read this course at:** [https://siliconwit.com/education/fpga-digital-design-verilog/](https://siliconwit.com/education/fpga-digital-design-verilog/)
 
-A practical course on designing digital hardware in Verilog and running it on an FPGA. It assumes the [Digital Electronics and Logic](https://siliconwit.com/education/digital-electronics/) course as a prerequisite and starts from how to describe logic in Verilog, then takes the reader through simulation, state machines, real FPGA hardware, building microcontroller-style peripherals, memory and clock-domain crossing, a mini CPU, FPGA plus MCU co-design, and a capstone push from RTL to an ASIC with the Sky130 PDK and OpenLane.
+A practical course on designing digital hardware in Verilog and running it on an FPGA. It assumes the [Digital Electronics and Logic](https://siliconwit.com/education/digital-electronics/) course as a prerequisite and starts from how to describe logic in Verilog, then takes the reader through simulation, state machines, real FPGA hardware, building microcontroller-style peripherals, memory and clock-domain crossing, a mini CPU, FPGA plus MCU co-design, and a capstone push from RTL to an ASIC with the Sky130 PDK and LibreLane.
 
 ## Status
 
@@ -27,7 +27,7 @@ This course is scaffolded and open for contribution. Each lesson file contains t
 | 1 | Verilog Fundamentals | `verilog-fundamentals.mdx` |
 | 2 | Simulation and Testbenches | `simulation-and-testbenches.mdx` |
 | 3 | State Machines in Verilog | `state-machines-verilog.mdx` |
-| 4 | First Design on a Real FPGA | `first-fpga-design-ice40.mdx` |
+| 4 | First Design on a Real FPGA | `first-fpga-design.mdx` |
 | 5 | Building MCU-Style Peripherals | `building-mcu-peripherals.mdx` |
 | 6 | Memory, FIFOs, and Clock-Domain Crossing | `memory-fifos-clock-domain-crossing.mdx` |
 | 7 | Building a Mini CPU | `building-a-mini-cpu.mdx` |
@@ -42,7 +42,7 @@ fpga-digital-design-verilog/
 ├── verilog-fundamentals.mdx
 ├── simulation-and-testbenches.mdx
 ├── state-machines-verilog.mdx
-├── first-fpga-design-ice40.mdx
+├── first-fpga-design.mdx
 ├── building-mcu-peripherals.mdx
 ├── memory-fifos-clock-domain-crossing.mdx
 ├── building-a-mini-cpu.mdx
